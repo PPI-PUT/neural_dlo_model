@@ -1,0 +1,4 @@
+[submodule "cable_observer"]
+	path = cable_observer
+	url = https://github.com/PPI-PUT/cable_observer.git
+	branch = 3d_neural_dataset
