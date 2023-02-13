@@ -11,10 +11,6 @@ import sys
 import yaml
 import matplotlib.pyplot as plt
 
-from utils.bspline import BSpline
-from utils.constants import BSplineConstants
-from utils.geometry import euler2rotmat, invert
-
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PACKAGE_DIR = os.path.join(SCRIPT_DIR, "..")
 sys.path.append(PACKAGE_DIR)
@@ -22,6 +18,9 @@ CABLE_OBSERVER_DIR = os.path.join(PACKAGE_DIR, "cable_observer", "src", "cable_o
 sys.path.append(CABLE_OBSERVER_DIR)
 
 from cable_observer.src.cable_observer.utils.tracking import track
+from utils.bspline import BSpline
+from utils.constants import BSplineConstants
+from utils.geometry import euler2rotmat, invert
 
 
 def uvz2xyz(uvz, f, c):
