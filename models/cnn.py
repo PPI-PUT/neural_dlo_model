@@ -52,6 +52,7 @@ class CNN(tf.keras.Model):
         ]
 
     def __call__(self, rot, trans, cable, training=False):
+        cable_ = copy(cable)
         rot = self.rot(rot, training=training)
         trans = self.trans(trans, training=training)
         transrot = tf.concat([rot, trans], axis=-1)
@@ -70,5 +71,5 @@ class CNN(tf.keras.Model):
             if l.name.startswith("up_sampling"):
                 if len(intermediate)-i-2 > 0:
                     x = tf.concat([x, intermediate[-i-2]], axis=-1)
-        x = x + cable
+        x = x + cable_
         return x
