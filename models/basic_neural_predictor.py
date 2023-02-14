@@ -18,7 +18,8 @@ class BasicNeuralPredictor(tf.keras.Model):
             tf.keras.layers.Dense(BSplineConstants.ncp),
         ]
 
-    def __call__(self, x):
+    def __call__(self, x1, x2, x3, training=True):
+        x = tf.concat([x1, x2, x3], axis=-1)
         for l in self.fc:
             x = l(x)
         return x

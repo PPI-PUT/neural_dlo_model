@@ -37,7 +37,8 @@ class args:
     #out_name = 'xyzrpy_episodic_all2all_02_10__09_15_bs32_lr5em5_separated_l1x256_l3x256_m_regloss0em4_bs_keq_dsnotmixed_length_loss_1em1'
     #out_name = 'xyzrpy_episodic_all2all_02_10__10_00_bs32_lr5em5_separated_l1x256_l3x256_m_regloss0em4_bs_keq_dsnotmixed'
     #out_name = 'xyzrpy_episodic_all2all_02_10__10_20_bs32_lr5em5_separated_l1x256_l3x256_m_regloss0em4_bs_keq_dsnotmixed'
-    out_name = 'xyzrpy_episodic_all2all_02_10__14_00_bs32_lr5em5_separated_l1x256_l3x256_m_regloss0em4_bs_keq_dsnotmixed_absloss_withened_'
+    #out_name = 'xyzrpy_episodic_all2all_02_10__14_00_bs32_lr5em5_separated_l1x256_l3x256_m_regloss0em4_bs_keq_dsnotmixed_absloss_withened_'
+    out_name = 'xyzrpy_episodic_all2all_02_10__14_00_bs32_lr5em5_separated_l1x256_l3x256_cable_diff_m_regloss0em4_bs_keq_dsnotmixed_absloss_withened'
     #out_name = 'xyzrpy_episodic_all2all_02_10__14_00_bs32_lr5em5_separated_cablecnn_l1x128_l2x128_outputcnn_m_regloss0em4_bs_keq_dsnotmixed_absloss_withened'
     #out_name = 'xyzrpy_all2all_02_10__14_00_bs32_lr5em5_separated_l1x256_l3x256_m_regloss0em4_bs_keq_dsmixed_absloss_withened'
     #out_name = 'test'
@@ -76,6 +77,7 @@ val_ds, val_size, vX1, vX2, vX3, vY = prepare_dataset(args.dataset_path.replace(
 tX1, vX1, m1, s1 = whiten(tX1, vX1)
 tX2, vX2, m2, s2 = whiten(tX2, vX2)
 tX3, vX3, m3, s3 = whiten(tX3, vX3)
+#m3, s3 = 0., 1.
 tY, vY, my, sy = whiten(tY, vY)
 
 train_ds = tf.data.Dataset.from_tensor_slices({"x1": tX1, "x2": tX2, "x3": tX3, "y": tY})
@@ -150,8 +152,8 @@ loss = CableBSplineLoss()
 loss_pts = CableSeqLoss()
 
 
-# model = BasicNeuralPredictor()
-model = SeparatedNeuralPredictor()
+model = BasicNeuralPredictor()
+#model = SeparatedNeuralPredictor()
 #model = SeparatedCNNNeuralPredictor()
 
 experiment_handler = ExperimentHandler(args.working_dir, args.out_name, args.log_interval, model, opt)

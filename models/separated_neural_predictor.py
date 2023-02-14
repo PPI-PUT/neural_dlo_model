@@ -38,10 +38,15 @@ class SeparatedNeuralPredictor(tf.keras.Model):
             rot = l(rot, training=training)
         for l in self.trans:
             trans = l(trans, training=training)
-        for l in self.cable:
-            cable = l(cable, training=training)
 
-        x = tf.concat([rot, trans, cable], axis=-1)
+        dcable = cable[:, 1:] - cable[:, :-1]
+        cable_ = tf.reshape(dcable, (-1, (BSplineConstants.n - 1) * BSplineConstants.dim))
+        for l in self.cable:
+            cable_ = l(cable_, training=training)
+
+        x = tf.concat([rot, trans, cable_], axis=-1)
         for l in self.fc:
             x = l(x, training=training)
+        x = tf.reshape(x, (-1, BSplineConstants.n , BSplineConstants.dim))
+        x = x + cable
         return x

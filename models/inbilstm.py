@@ -8,7 +8,7 @@ from utils.constants import BSplineConstants
 class INBiLSTM(tf.keras.Model):
     def __init__(self):
         super(INBiLSTM, self).__init__()
-        #activation = tf.keras.activations.relu
+        # activation = tf.keras.activations.relu
         activation = tf.keras.activations.tanh
         N = 128
 
@@ -34,12 +34,11 @@ class INBiLSTM(tf.keras.Model):
         ])
 
         self.bilstm = Sequential([
-            #Bidirectional(LSTM(N, return_sequences=True), merge_mode="sum"),
-            #Bidirectional(LSTM(N, return_sequences=True), merge_mode="sum"),
-            Bidirectional(LSTM(int(N/2), return_sequences=True)),
-            Bidirectional(LSTM(int(N/2), return_sequences=True)),
+            # Bidirectional(LSTM(N, return_sequences=True), merge_mode="sum"),
+            # Bidirectional(LSTM(N, return_sequences=True), merge_mode="sum"),
+            Bidirectional(LSTM(int(N / 2), return_sequences=True)),
+            Bidirectional(LSTM(int(N / 2), return_sequences=True)),
         ])
-
 
         self.action_left = [
             tf.keras.layers.Dense(N, activation),
@@ -51,8 +50,9 @@ class INBiLSTM(tf.keras.Model):
             tf.keras.layers.Dense(N, activation),
         ]
 
-
-    def __call__(self, points, left_action, right_action, training=False):
+    def __call__(self, rotation, translation, points, training=False):
+        left_action = tf.concat([rotation[:, :18], translation], axis=-1)
+        right_action = rotation[:, 18:]
         edges = points[:, 1:] - points[:, :-1]
         reverse_edges = points[:, :-1] - points[:, 1:]
 
@@ -67,8 +67,6 @@ class INBiLSTM(tf.keras.Model):
 
         for l in self.action_right:
             right_action = l(right_action, training=training)
-
-
 
         relations_impacts = tf.concat([reverse_edges[:, :1] + right_action[:, tf.newaxis],
                                        reverse_edges[:, 1:] + edges[:, :-1],
