@@ -70,4 +70,5 @@ class CNN(tf.keras.Model):
             if l.name.startswith("up_sampling"):
                 if len(intermediate)-i-2 > 0:
                     x = tf.concat([x, intermediate[-i-2]], axis=-1)
+        x = x + cable
         return x
