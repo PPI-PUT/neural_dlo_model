@@ -1,6 +1,7 @@
 import os
 
 from losses.cable import CableBSplineLoss
+from models.cnn import CNN
 from models.inbilstm import INBiLSTM
 from models.separated_cnn_neural_predictor import SeparatedCNNNeuralPredictor
 from models.separated_neural_predictor import SeparatedNeuralPredictor
@@ -39,7 +40,7 @@ class args:
     #out_name = 'xyzrpy_episodic_all2all_02_10__10_00_bs32_lr5em5_separated_l1x256_l3x256_m_regloss0em4_bs_keq_dsnotmixed'
     #out_name = 'xyzrpy_episodic_all2all_02_10__10_20_bs32_lr5em5_separated_l1x256_l3x256_m_regloss0em4_bs_keq_dsnotmixed'
     #out_name = 'xyzrpy_episodic_all2all_02_10__14_00_bs32_lr5em5_separated_l1x256_l3x256_m_regloss0em4_bs_keq_dsnotmixed_absloss_withened_'
-    out_name = 'xyzrpy_episodic_all2all_02_10__14_00_bs32_lr5em5_separated_l1x256_l3x256_cable_diff_m_regloss0em4_bs_keq_dsnotmixed_absloss_withened'
+    out_name = 'xyzrpy_episodic_all2all_02_10__14_00_p16_bs32_lr5em5_cnn_dsnotmixed_absloss_withened'
     #out_name = 'xyzrpy_episodic_all2all_02_10__14_00_bs32_lr5em5_separated_cablecnn_l1x128_l2x128_outputcnn_m_regloss0em4_bs_keq_dsnotmixed_absloss_withened'
     #out_name = 'xyzrpy_all2all_02_10__14_00_bs32_lr5em5_separated_l1x256_l3x256_m_regloss0em4_bs_keq_dsmixed_absloss_withened'
     #out_name = 'test'
@@ -48,7 +49,7 @@ class args:
     l2reg = 0e-4
     len_loss = 0
     acc_loss = 0e-1
-    dataset_path = "./data/prepared_datasets/xyzrpy_episodic_all2all_02_10__14_00/train.tsv"
+    dataset_path = "./data/prepared_datasets/xyzrpy_episodic_all2all_02_10__14_00_p16/train.tsv"
     #dataset_path = "./data/prepared_datasets/xyzrpy_all2all_02_10__14_00/train.tsv"
     # dataset_path = "./data/prepared_datasets/yz_big_keq/train.tsv"
     # dataset_path = "./data/prepared_datasets/yz_big_keq_n1000/train.tsv"
@@ -82,15 +83,16 @@ loss = CableBSplineLoss()
 #model = BasicNeuralPredictor()
 #model = SeparatedCNNNeuralPredictor()
 #model = SeparatedNeuralPredictor()
-model = INBiLSTM()
+#model = INBiLSTM()
+model = CNN()
 
 experiment_handler = ExperimentHandler(args.working_dir, args.out_name, args.log_interval, model, opt)
 
 def inference(rotation, translation, cable):
-    #rotation_, translation_, cable_, y_gt_ = whitening(rotation, translation, cable, y_gt, ds_stats)
-    # y_pred_ = model(rotation_, translation_, cable_, training=True)
-    # y_pred = y_pred_ * ds_stats["sy"] + ds_stats["my"]
-    y_pred = model(rotation, translation, cable, training=True)
+    rotation_, translation_, cable_, y_gt_ = whitening(rotation, translation, cable, y_gt, ds_stats)
+    y_pred_ = model(rotation_, translation_, cable_, training=True)
+    y_pred = y_pred_ * ds_stats["sy"] + ds_stats["my"]
+    #y_pred = model(rotation, translation, cable, training=True)
     return y_pred
 
 
