@@ -2,6 +2,8 @@ from utils.bspline import BSpline
 from utils.constants import BSplineConstants
 import tensorflow as tf
 
+from utils.geometry import compute_curve_energy
+
 
 class CableBSplineLoss:
     def __init__(self):
@@ -47,6 +49,9 @@ class CableBSplineLoss:
         acccurv_yz_pred = tf.reduce_sum(tf.abs(dcurv_yz_pred) * dyz_pred, axis=-1)
         acccurv_yz_loss = tf.abs(acccurv_yz_gt - acccurv_yz_pred)
 
+        pred_energy = compute_curve_energy(dvpred, ddvpred)
+        gt_energy = compute_curve_energy(dvgt, ddvgt)
+
         return control_pts_loss_mabs, control_pts_loss_meuc, control_pts_loss_ml2,\
                pts_loss_mabs, pts_loss_meuc, pts_loss_ml2,\
-               length_loss, acccurv_yz_loss
+               length_loss, acccurv_yz_loss, pred_energy, gt_energy

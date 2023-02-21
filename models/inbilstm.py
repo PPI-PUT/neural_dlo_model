@@ -51,8 +51,10 @@ class INBiLSTM(tf.keras.Model):
         ]
 
     def __call__(self, rotation, translation, points, training=False):
-        left_action = tf.concat([rotation[:, :18], translation], axis=-1)
-        right_action = rotation[:, 18:]
+        #left_action = tf.concat([rotation[:, :18], translation], axis=-1)
+        #right_action = rotation[:, 18:]
+        left_action = tf.concat([rotation[0], rotation[1], *translation], axis=-1)
+        right_action = tf.concat(rotation[2:], axis=-1)
         edges = points[:, 1:] - points[:, :-1]
         reverse_edges = points[:, :-1] - points[:, 1:]
 

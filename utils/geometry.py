@@ -26,3 +26,11 @@ def quat2rotmat(quat):
 def invert(R, t):
     R = R.T
     return R, -R @ t
+
+
+def compute_curve_energy(dr, ddr):
+    n = np.linalg.norm(np.cross(dr, ddr), axis=-1) ** 2
+    d = np.linalg.norm(dr, axis=-1) ** 5
+    energy = n / (d + 1e-10)
+    #print("MAX ENERGY:", np.max(energy))
+    return np.mean(energy, axis=-1)

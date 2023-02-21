@@ -5,20 +5,22 @@ import tensorflow as tf
 from utils.constants import BSplineConstants
 
 
-class CNN(tf.keras.Model):
+class CNNSep(tf.keras.Model):
     def __init__(self):
-        super(CNN, self).__init__()
+        super(CNNSep, self).__init__()
         activation = tf.keras.activations.tanh
         N = 256
+        K = 64
         p = 0.2
 
         self.trans = tf.keras.Sequential([
-            tf.keras.layers.Dense(N, activation),
-            tf.keras.layers.Dense(N, activation),
+            tf.keras.layers.Dense(K, activation),
+            tf.keras.layers.Dense(K, activation),
         ])
+
         self.rot = tf.keras.Sequential([
-            tf.keras.layers.Dense(N, activation),
-            tf.keras.layers.Dense(N, activation),
+            tf.keras.layers.Dense(K, activation),
+            tf.keras.layers.Dense(K, activation),
         ])
 
         self.transrot = tf.keras.Sequential([
@@ -53,15 +55,18 @@ class CNN(tf.keras.Model):
 
     def __call__(self, rotation, translation, cable, training=False):
         cable_ = copy(cable)
-        #R_l_0, R_l_1, R_r_0, R_r_1 = rotation
-        #t_l_0, t_l_1 = translation
+        R_l_0, R_l_1, R_r_0, R_r_1 = rotation
+        t_l_0, t_l_1 = translation
 
-        rot = tf.concat(rotation, axis=-1)
-        trans = tf.concat(translation, axis=-1)
+        R_l_0 = self.rot(R_l_0, training=training)
+        R_l_1 = self.rot(R_l_1, training=training)
+        R_r_0 = self.rot(R_r_0, training=training)
+        R_r_1 = self.rot(R_r_1, training=training)
 
-        rot = self.rot(rot, training=training)
-        trans = self.trans(trans, training=training)
-        transrot = tf.concat([rot, trans], axis=-1)
+        t_l_0 = self.trans(t_l_0)
+        t_l_1 = self.trans(t_l_1)
+
+        transrot = tf.concat([R_l_0, R_l_1, R_r_0, R_r_1, t_l_0, t_l_1], axis=-1)
         transrot = self.transrot(transrot, training=training)
         #transrot = tf.tile(transrot[:, tf.newaxis], (1, BSplineConstants.n, 1))
 

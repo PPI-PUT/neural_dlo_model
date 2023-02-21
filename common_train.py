@@ -2,19 +2,21 @@ import os
 
 from losses.cable import CableBSplineLoss
 from models.cnn import CNN
+from models.cnn_sep import CNNSep
 from models.inbilstm import INBiLSTM
 from models.separated_cnn_neural_predictor import SeparatedCNNNeuralPredictor
 from models.separated_neural_predictor import SeparatedNeuralPredictor
 from utils.bspline import BSpline
 from utils.constants import BSplineConstants
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+#os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
-from utils.dataset import _ds, prepare_dataset, whiten, mix_datasets, whitening, compute_ds_stats
+from utils.dataset import _ds, prepare_dataset, whiten, mix_datasets, whitening, compute_ds_stats, unpack_rotation, \
+    unpack_translation
 from utils.execution import ExperimentHandler
 from models.basic_neural_predictor import BasicNeuralPredictor
 
@@ -40,7 +42,11 @@ class args:
     #out_name = 'xyzrpy_episodic_all2all_02_10__10_00_bs32_lr5em5_separated_l1x256_l3x256_m_regloss0em4_bs_keq_dsnotmixed'
     #out_name = 'xyzrpy_episodic_all2all_02_10__10_20_bs32_lr5em5_separated_l1x256_l3x256_m_regloss0em4_bs_keq_dsnotmixed'
     #out_name = 'xyzrpy_episodic_all2all_02_10__14_00_bs32_lr5em5_separated_l1x256_l3x256_m_regloss0em4_bs_keq_dsnotmixed_absloss_withened_'
-    out_name = 'xyzrpy_episodic_all2all_02_10__14_00_p16_bs32_lr5em5_cnn_dsnotmixed_absloss_withened'
+    #out_name = 'xyzrpy_episodic_all2all_02_10__14_00_p16_bs32_lr5em5_cnn_sep_dsnotmixed_absloss_withened'
+    #out_name = 'xyzrpy_episodic_semisep_all2all_fixed_02_10__14_00_p16_bs32_lr5em5_inbilstm_absloss_withened_quat'
+    out_name = 'xyzrpy_episodic_semisep_all2all_02_21__12_30_cp16_bs32_lr5em5_sep_absloss_withened_quat'
+    #out_name = 'xyzrpy_episodic_semisep_all2all_fixed_02_10__14_00_pts16_bs32_lr5em5_cnn_sep_dsnotmixed_absloss_withened'
+    #out_name = 'xyzrpy_episodic_02_10__14_00_p16_bs32_lr5em5_cnn_dsmixed_absloss_withened'
     #out_name = 'xyzrpy_episodic_all2all_02_10__14_00_bs32_lr5em5_separated_cablecnn_l1x128_l2x128_outputcnn_m_regloss0em4_bs_keq_dsnotmixed_absloss_withened'
     #out_name = 'xyzrpy_all2all_02_10__14_00_bs32_lr5em5_separated_l1x256_l3x256_m_regloss0em4_bs_keq_dsmixed_absloss_withened'
     #out_name = 'test'
@@ -49,7 +55,11 @@ class args:
     l2reg = 0e-4
     len_loss = 0
     acc_loss = 0e-1
-    dataset_path = "./data/prepared_datasets/xyzrpy_episodic_all2all_02_10__14_00_p16/train.tsv"
+    #dataset_path = "./data/prepared_datasets/xyzrpy_episodic_02_10__14_00_p16/train.tsv"
+    dataset_path = "./data/prepared_datasets/xyzrpy_episodic_semisep_all2all_02_21__12_30_cp16/train.tsv"
+    #dataset_path = "./data/prepared_datasets/xyzrpy_episodic_semisep_all2all_fixed_02_10__14_00_p16/train.tsv"
+    #dataset_path = "./data/prepared_datasets/xyzrpy_episodic_semisep_all2all_fixed_02_10__14_00_pts16/train.tsv"
+    #dataset_path = "./data/prepared_datasets/xyzrpy_episodic_all2all_02_10__14_00_p16/train.tsv"
     #dataset_path = "./data/prepared_datasets/xyzrpy_all2all_02_10__14_00/train.tsv"
     # dataset_path = "./data/prepared_datasets/yz_big_keq/train.tsv"
     # dataset_path = "./data/prepared_datasets/yz_big_keq_n1000/train.tsv"
@@ -61,6 +71,9 @@ train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset(args.dataset_path)  # 
 val_ds, val_size, vX1, vX2, vX3, vY = prepare_dataset(args.dataset_path.replace("train", "val"))
 
 #tX1, tX2, tX3, tY, vX1, vX2, vX3, vY, train_size, val_size = mix_datasets(tX1, tX2, tX3, tY, vX1, vX2, vX3, vY)
+#train_ds = tf.data.Dataset.from_tensor_slices({"x1": tX1, "x2": tX2, "x3": tX3, "y": tY})
+#val_ds = tf.data.Dataset.from_tensor_slices({"x1": vX1, "x2": vX2, "x3": vX3, "y": vY})
+
 ds_stats = compute_ds_stats(train_ds)
 
 #tX1, vX1, m1, s1 = whiten(tX1, vX1)
@@ -72,7 +85,7 @@ ds_stats = compute_ds_stats(train_ds)
 #train_ds = tf.data.Dataset.from_tensor_slices({"x1": tX1, "x2": tX2, "x3": tX3, "y": tY})
 #val_ds = tf.data.Dataset.from_tensor_slices({"x1": vX1, "x2": vX2, "x3": vX3, "y": vY})
 
-bsp = BSpline(25, 3)
+#bsp = BSpline(25, 3)
 
 
 opt = tf.keras.optimizers.Adam(args.learning_rate)
@@ -82,15 +95,19 @@ loss = CableBSplineLoss()
 
 #model = BasicNeuralPredictor()
 #model = SeparatedCNNNeuralPredictor()
-#model = SeparatedNeuralPredictor()
+model = SeparatedNeuralPredictor()
 #model = INBiLSTM()
-model = CNN()
+#model = CNN()
+#model = CNNSep()
 
 experiment_handler = ExperimentHandler(args.working_dir, args.out_name, args.log_interval, model, opt)
 
 def inference(rotation, translation, cable):
     rotation_, translation_, cable_, y_gt_ = whitening(rotation, translation, cable, y_gt, ds_stats)
-    y_pred_ = model(rotation_, translation_, cable_, training=True)
+    R_l_0, R_l_1, R_r_0, R_r_1 = unpack_rotation(rotation_)
+    t_l_0, t_l_1 = unpack_translation(translation_)
+    y_pred_ = model((R_l_0, R_l_1, R_r_0, R_r_1), (t_l_0, t_l_1), cable_)
+    #y_pred_ = model(rotation_, translation_, cable_, training=True)
     y_pred = y_pred_ * ds_stats["sy"] + ds_stats["my"]
     #y_pred = model(rotation, translation, cable, training=True)
     return y_pred
@@ -115,7 +132,7 @@ for epoch in range(30000):
             y_pred = inference(rotation, translation, cable)
             cp_loss_abs, cp_loss_euc, cp_loss_l2, \
             pts_loss_abs, pts_loss_euc, pts_loss_l2, \
-            length_loss, accurv_yz_loss = loss(y_gt, y_pred)
+            length_loss, accurv_yz_loss, pred_energy, gt_energy = loss(y_gt, y_pred)
 
             prediction_loss = cp_loss_abs
 
@@ -163,7 +180,7 @@ for epoch in range(30000):
         y_pred = inference(rotation, translation, cable)
         cp_loss_abs, cp_loss_euc, cp_loss_l2,\
         pts_loss_abs, pts_loss_euc, pts_loss_l2,\
-        length_loss, accurv_yz_loss = loss(y_gt, y_pred)
+        length_loss, accurv_yz_loss, pred_energy, gt_energy = loss(y_gt, y_pred)
 
         prediction_loss = cp_loss_abs
 

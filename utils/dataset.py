@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 from tqdm import tqdm
+from scipy.spatial.transform import Rotation as R
 
 from utils.constants import BSplineConstants
 
@@ -34,14 +35,24 @@ def prepare_dataset(path, n=0):
     diff_R_l = np.transpose(R_l_0, (0, 2, 1)) @ R_l_1
     diff_R_r = np.transpose(R_r_0, (0, 2, 1)) @ R_r_1
     mul = 1.
-    X1 = np.concatenate([R_l_0.reshape((-1, 9)), diff_R_l.reshape((-1, 9)),
-                         R_r_0.reshape((-1, 9)), diff_R_r.reshape((-1, 9)),
-                         ], axis=-1)
+    # X1 = np.concatenate([R_l_0.reshape((-1, 9)), diff_R_l.reshape((-1, 9)),
+    #                     R_r_0.reshape((-1, 9)), diff_R_r.reshape((-1, 9)),
+    #                     ], axis=-1)
+    # X2 = np.concatenate([xyz_l_0 * mul,
+    #                     (xyz_l_1 - xyz_l_0) * mul,
+    #                     ], axis=-1)
+    #X1 = np.concatenate([R_l_0.reshape((-1, 9)), R_l_1.reshape((-1, 9)),
+    #                     R_r_0.reshape((-1, 9)), R_r_1.reshape((-1, 9)),
+    #                     ], axis=-1)
+    #a = R.from_matrix(R_l_0)
+    X1 = np.concatenate([R.from_matrix(R_l_0).as_quat(), R.from_matrix(R_l_1).as_quat(),
+                         R.from_matrix(R_r_0).as_quat(), R.from_matrix(R_r_1).as_quat(),
+                         ], axis=-1).astype(np.float32)
     X2 = np.concatenate([xyz_l_0 * mul,
-                         (xyz_l_1 - xyz_l_0) * mul,
-                         ], axis=-1)
-    X3 = cp_0 * mul
-    Y = cp_1 * mul
+                         xyz_l_1 * mul,
+                         ], axis=-1).astype(np.float32)
+    X3 = cp_0.astype(np.float32) * mul
+    Y = cp_1.astype(np.float32) * mul
     ds_size = data.shape[0]
     ds = tf.data.Dataset.from_tensor_slices({"x1": X1, "x2": X2, "x3": X3, "y": Y})
     return ds, ds_size, X1, X2, X3, Y
@@ -114,3 +125,21 @@ def whitening(x1, x2, x3, y, ds_stats):
     x3 = (x3 - ds_stats["m3"]) / (ds_stats["s3"] + 1e-8)
     y = (y - ds_stats["my"]) / (ds_stats["sy"] + 1e-8)
     return x1, x2, x3, y
+
+
+def unpack_rotation(rotation):
+    #R_l_0 = rotation[:, :9]
+    #R_l_1 = rotation[:, 9:18]
+    #R_r_0 = rotation[:, 18:27]
+    #R_r_1 = rotation[:, 27:]
+    R_l_0 = rotation[:, :4]
+    R_l_1 = rotation[:, 4:8]
+    R_r_0 = rotation[:, 8:12]
+    R_r_1 = rotation[:, 12:]
+    return R_l_0, R_l_1, R_r_0, R_r_1
+
+
+def unpack_translation(translation):
+    t_l_0 = translation[:, :3]
+    t_r_0 = translation[:, 3:]
+    return t_l_0, t_r_0

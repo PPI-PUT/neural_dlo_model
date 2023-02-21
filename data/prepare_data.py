@@ -40,8 +40,13 @@ ds_name = "xyzrpy"
 #ds_type = "train"
 #ds_type = ""
 #ds_type = "val"
-ds_type = "filtered_data"
+#ds_type = "filtered_data"
 #ds_type = "filtered_data/val"
+#ds_type = "02_21_nominal_l50cm"
+#ds_type = "02_21_l40cm"
+#ds_type = "02_21_l45cm"
+ds_type = "l50cm_sep/val"
+#ds_type = "l50cm_sep/train"
 N = 100
 # plots = True
 plots = False
@@ -56,7 +61,7 @@ params = yaml.load(stream, Loader=yaml.FullLoader)
 R_base2base = np.array([[-1., 0., 0.], [0., -1., 0.], [0., 0., 1.]])
 
 color = ['r', 'g', 'b', 'c', 'm', 'k']
-bsp = BSpline(25, 3)
+bsp = BSpline(BSplineConstants.n, BSplineConstants.dim)
 
 for k, pkl in enumerate(sorted(glob(os.path.join(SCRIPT_DIR, ds_name, ds_type, "*.pkl")))):
     print(pkl)
@@ -83,6 +88,7 @@ for k, pkl in enumerate(sorted(glob(os.path.join(SCRIPT_DIR, ds_name, ds_type, "
     R_right_flange_in_tcp, t_right_flange_in_tcp = invert(np.eye(3), gripper_in_flange)
     t_left_base_in_right_base = (t_camera_in_right_base - t_camera_in_left_base)
     states = []
+    #k = 0
     for i, d in enumerate(dataset):
         img = d['rgb_img']
         depth = d['depth_img']
@@ -137,7 +143,8 @@ for k, pkl in enumerate(sorted(glob(os.path.join(SCRIPT_DIR, ds_name, ds_type, "
         dxyz = np.diff(xyz_spline[:, :, 0], axis=0)
         length = np.sum(np.linalg.norm(dxyz, axis=-1))
         print("LENGTH:", length)
-        if length < 0.40:
+        L = 0.4
+        if length < L:
             print("TOO SHORT:", length)
             continue
 
@@ -198,6 +205,7 @@ for k, pkl in enumerate(sorted(glob(os.path.join(SCRIPT_DIR, ds_name, ds_type, "
         plt.subplot(224)
         plt.plot(xyz_bsp[:, 1], xyz_bsp[:, 2], color[k % len(color)])
         a = 0
+        #k += 1
         #plt.show()
 
     #plt.show()
