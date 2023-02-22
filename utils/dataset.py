@@ -18,7 +18,7 @@ def _ds(title, ds, ds_size, i, batch_size):
             pbar.update(batch_size)
 
 
-def prepare_dataset(path, n=0):
+def prepare_dataset(path, n=0, augment=False):
     data = np.loadtxt(path, delimiter='\t').astype(np.float32)
     if n > 0:
         idx = np.random.randint(0, data.shape[0] - 1, n)
@@ -53,6 +53,36 @@ def prepare_dataset(path, n=0):
                          ], axis=-1).astype(np.float32)
     X3 = cp_0.astype(np.float32) * mul
     Y = cp_1.astype(np.float32) * mul
+
+    if augment:
+        #X1aug = np.concatenate([R.from_matrix(R_l_0).as_quat(), R.from_matrix(R_l_1).as_quat(),
+        #                     R.from_matrix(R_r_0).as_quat(), R.from_matrix(R_r_1).as_quat(),
+        #                     ], axis=-1).astype(np.float32)
+        #X2aug = np.concatenate([xyz_l_0 * mul,
+        #                     xyz_l_1 * mul,
+        #                     ], axis=-1).astype(np.float32)
+        #X3aug = cp_0.astype(np.float32) * mul
+        #Yaug = cp_1.astype(np.float32) * mul
+        X1aug = np.concatenate([R.from_matrix(R_l_0).as_quat(), R.from_matrix(R_l_0).as_quat(),
+                                R.from_matrix(R_r_0).as_quat(), R.from_matrix(R_r_0).as_quat(),
+                                ], axis=-1).astype(np.float32)
+        X2aug = np.concatenate([xyz_l_0 * mul,
+                                xyz_l_0 * mul,
+                                ], axis=-1).astype(np.float32)
+        X3aug = cp_0.astype(np.float32) * mul
+        Yaug = cp_0.astype(np.float32) * mul
+        #zdev = np.eye(BSplineConstants.n)[np.random.randint(0, 16, (Yaug.shape[0]))]
+        #zdev = 0.03 * np.random.random() * np.stack([np.zeros_like(zdev), np.zeros_like(zdev), zdev], axis=-1)
+        #X3aug += zdev
+        #zdev = np.eye(BSplineConstants.n)[np.random.randint(0, 16, (Yaug.shape[0]))]
+        #zdev = 0.03 * np.random.random() * np.stack([np.zeros_like(zdev), np.zeros_like(zdev), zdev], axis=-1)
+        #Yaug += zdev
+
+        X1 = np.concatenate([X1, X1aug], axis=0)
+        X2 = np.concatenate([X2, X2aug], axis=0)
+        X3 = np.concatenate([X3, X3aug], axis=0)
+        Y = np.concatenate([Y, Yaug], axis=0)
+
     ds_size = data.shape[0]
     ds = tf.data.Dataset.from_tensor_slices({"x1": X1, "x2": X2, "x3": X3, "y": Y})
     return ds, ds_size, X1, X2, X3, Y

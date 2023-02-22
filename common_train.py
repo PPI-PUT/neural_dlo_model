@@ -67,7 +67,7 @@ class args:
     # dataset_path = "./data/prepared_datasets/short_ds/train.tsv"
 
 
-train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset(args.dataset_path)  # , n=10)
+train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset(args.dataset_path, augment=True)  # , n=10)
 val_ds, val_size, vX1, vX2, vX3, vY = prepare_dataset(args.dataset_path.replace("train", "val"))
 
 #tX1, tX2, tX3, tY, vX1, vX2, vX3, vY, train_size, val_size = mix_datasets(tX1, tX2, tX3, tY, vX1, vX2, vX3, vY)
