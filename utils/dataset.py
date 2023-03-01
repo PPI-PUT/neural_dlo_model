@@ -210,13 +210,15 @@ def prepare_dataset_cond(path, n=0, quat=False, diff=False, augment=False):
 
     if augment:
         if diff:
+            bs = Y.shape[0]
+            identity = np.tile(np.eye(3)[np.newaxis], (bs, 1, 1))
             if quat:
-                X1aug = np.concatenate([R.from_matrix(R_l_0).as_quat(), R.from_matrix(diff_R_l).as_quat(),
-                                        R.from_matrix(R_r_0).as_quat(), R.from_matrix(diff_R_r).as_quat(),
+                X1aug = np.concatenate([R.from_matrix(R_l_0).as_quat(), R.from_matrix(identity).as_quat(),
+                                        R.from_matrix(R_r_0).as_quat(), R.from_matrix(identity).as_quat(),
                                         ], axis=-1).astype(np.float32)
             else:
-                X1aug = np.concatenate([R_l_0.reshape((-1, 9)), diff_R_l.reshape((-1, 9)),
-                                        R_r_0.reshape((-1, 9)), diff_R_r.reshape((-1, 9)),
+                X1aug = np.concatenate([R_l_0.reshape((-1, 9)), identity.reshape((-1, 9)),
+                                        R_r_0.reshape((-1, 9)), identity.reshape((-1, 9)),
                                         ], axis=-1)
             X2aug = np.concatenate([xyz_l_0 * mul,
                                     np.zeros_like(xyz_l_1) * mul,
@@ -298,13 +300,15 @@ def prepare_dataset_cond_ref(path, n=0, quat=False, diff=False, augment=False):
 
     if augment:
         if diff:
+            bs = Y.shape[0]
+            identity = np.tile(np.eye(3)[np.newaxis], (bs, 1, 1))
             if quat:
-                X1aug = np.concatenate([R.from_matrix(R_l_0).as_quat(), R.from_matrix(diff_R_l).as_quat(),
-                                        R.from_matrix(R_r_0).as_quat(), R.from_matrix(diff_R_r).as_quat(),
+                X1aug = np.concatenate([R.from_matrix(R_l_0).as_quat(), R.from_matrix(identity).as_quat(),
+                                        R.from_matrix(R_r_0).as_quat(), R.from_matrix(identity).as_quat(),
                                         ], axis=-1).astype(np.float32)
             else:
-                X1aug = np.concatenate([R_l_0.reshape((-1, 9)), diff_R_l.reshape((-1, 9)),
-                                        R_r_0.reshape((-1, 9)), diff_R_r.reshape((-1, 9)),
+                X1aug = np.concatenate([R_l_0.reshape((-1, 9)), identity.reshape((-1, 9)),
+                                        R_r_0.reshape((-1, 9)), identity.reshape((-1, 9)),
                                         ], axis=-1)
             X2aug = np.concatenate([xyz_l_0 * mul,
                                     np.zeros_like(xyz_l_1) * mul,
