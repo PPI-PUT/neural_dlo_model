@@ -16,7 +16,7 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 
 from utils.dataset import _ds, prepare_dataset, whiten, mix_datasets, whitening, compute_ds_stats, unpack_rotation, \
-    unpack_translation
+    unpack_translation, prepare_dataset_cond
 from utils.execution import ExperimentHandler
 from models.basic_neural_predictor import BasicNeuralPredictor
 
@@ -67,8 +67,11 @@ class args:
     # dataset_path = "./data/prepared_datasets/short_ds/train.tsv"
 
 
-train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset(args.dataset_path, augment=True)  # , n=10)
-val_ds, val_size, vX1, vX2, vX3, vY = prepare_dataset(args.dataset_path.replace("train", "val"))
+diff = True
+quat = True
+train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, quat=quat, diff=diff)  # , n=10)
+#train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, quat=quat, diff=diff, augment=True)  # , n=10)
+val_ds, val_size, vX1, vX2, vX3, vY = prepare_dataset_cond(args.dataset_path.replace("train", "val"), quat=quat, diff=diff)
 
 #tX1, tX2, tX3, tY, vX1, vX2, vX3, vY, train_size, val_size = mix_datasets(tX1, tX2, tX3, tY, vX1, vX2, vX3, vY)
 #train_ds = tf.data.Dataset.from_tensor_slices({"x1": tX1, "x2": tX2, "x3": tX3, "y": tY})
