@@ -149,14 +149,12 @@ def whitening(x1, x2, x3, y, ds_stats):
 
 
 def unpack_rotation(rotation):
-    #R_l_0 = rotation[:, :9]
-    #R_l_1 = rotation[:, 9:18]
-    #R_r_0 = rotation[:, 18:27]
-    #R_r_1 = rotation[:, 27:]
-    R_l_0 = rotation[:, :4]
-    R_l_1 = rotation[:, 4:8]
-    R_r_0 = rotation[:, 8:12]
-    R_r_1 = rotation[:, 12:]
+    size = rotation.shape[-1]
+    step = int(size / 4)
+    R_l_0 = rotation[:, :step]
+    R_l_1 = rotation[:, step:2*step]
+    R_r_0 = rotation[:, 2*step:3*step]
+    R_r_1 = rotation[:, 3*step:]
     return R_l_0, R_l_1, R_r_0, R_r_1
 
 
