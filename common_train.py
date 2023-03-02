@@ -4,6 +4,7 @@ from losses.cable import CableBSplineLoss
 from models.cnn import CNN
 from models.cnn_sep import CNNSep
 from models.inbilstm import INBiLSTM
+from models.scale_neural_predictor import ScaleNeuralPredictor
 from models.separated_cnn_neural_predictor import SeparatedCNNNeuralPredictor
 from models.separated_neural_predictor import SeparatedNeuralPredictor
 from utils.bspline import BSpline
@@ -98,13 +99,13 @@ opt = tf.keras.optimizers.Adam(args.learning_rate)
 
 loss = CableBSplineLoss()
 
-
-#model = BasicNeuralPredictor()
-#model = SeparatedCNNNeuralPredictor()
-model = SeparatedNeuralPredictor()
-#model = INBiLSTM()
-#model = CNN()
-#model = CNNSep()
+# model = BasicNeuralPredictor()
+# model = SeparatedCNNNeuralPredictor()
+#model = SeparatedNeuralPredictor()
+model = ScaleNeuralPredictor()
+# model = INBiLSTM()
+# model = CNN()
+# model = CNNSep()
 
 experiment_handler = ExperimentHandler(args.working_dir, args.out_name, args.log_interval, model, opt)
 
