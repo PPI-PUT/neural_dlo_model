@@ -123,9 +123,9 @@ class ScaleNeuralPredictor1(tf.keras.Model):
         pre_rot_r = self.pre_rot_r(rot_r)
         pre_trans_l = self.pre_trans_l(trans_l)
 
-        cable_state_rot_l = tf.concat([cable_state, pre_rot_l])
-        cable_state_rot_r = tf.concat([cable_state, pre_rot_r])
-        cable_state_trans_l = tf.concat([cable_state, pre_trans_l])
+        cable_state_rot_l = tf.concat([cable_state, pre_rot_l], axis=-1)
+        cable_state_rot_r = tf.concat([cable_state, pre_rot_r], axis=-1)
+        cable_state_trans_l = tf.concat([cable_state, pre_trans_l], axis=-1)
 
         cable_rot_l = self.rot_l(cable_state_rot_l, training=training)
         cable_rot_r = self.rot_r(cable_state_rot_r, training=training)
