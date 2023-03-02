@@ -9,14 +9,14 @@ from models.separated_neural_predictor import SeparatedNeuralPredictor
 from utils.bspline import BSpline
 from utils.constants import BSplineConstants
 
-#os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
 from utils.dataset import _ds, prepare_dataset, whiten, mix_datasets, whitening, compute_ds_stats, unpack_rotation, \
-    unpack_translation, prepare_dataset_cond
+    unpack_translation, prepare_dataset_cond, unpack_cable
 from utils.execution import ExperimentHandler
 from models.basic_neural_predictor import BasicNeuralPredictor
 
@@ -69,9 +69,11 @@ class args:
 
 diff = True
 quat = True
+ifdcable = True
 train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, quat=quat, diff=diff)  # , n=10)
-#train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, quat=quat, diff=diff, augment=True)  # , n=10)
-val_ds, val_size, vX1, vX2, vX3, vY = prepare_dataset_cond(args.dataset_path.replace("train", "val"), quat=quat, diff=diff)
+# train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, quat=quat, diff=diff, augment=True)  # , n=10)
+val_ds, val_size, vX1, vX2, vX3, vY = prepare_dataset_cond(args.dataset_path.replace("train", "val"), quat=quat,
+                                                           diff=diff)
 
 #tX1, tX2, tX3, tY, vX1, vX2, vX3, vY, train_size, val_size = mix_datasets(tX1, tX2, tX3, tY, vX1, vX2, vX3, vY)
 #train_ds = tf.data.Dataset.from_tensor_slices({"x1": tX1, "x2": tX2, "x3": tX3, "y": tY})
@@ -106,14 +108,13 @@ model = SeparatedNeuralPredictor()
 experiment_handler = ExperimentHandler(args.working_dir, args.out_name, args.log_interval, model, opt)
 
 def inference(rotation, translation, cable):
-    rotation_, translation_, cable_, y_gt_ = whitening(rotation, translation, cable, y_gt, ds_stats)
+    rotation_, translation_, cable_ = whitening(rotation, translation, cable, ds_stats)
     R_l_0, R_l_1, R_r_0, R_r_1 = unpack_rotation(rotation_)
     t_l_0, t_l_1 = unpack_translation(translation_)
-    y_pred_ = model((R_l_0, R_l_1, R_r_0, R_r_1), (t_l_0, t_l_1), cable_)
-    #y_pred_ = model(rotation_, translation_, cable_, training=True)
+    cable_, dcable_ = unpack_cable(cable_)
+    y_pred_ = model((R_l_0, R_l_1, R_r_0, R_r_1), (t_l_0, t_l_1), dcable_ if ifdcable else cable_)
     y_pred = y_pred_ * ds_stats["sy"] + ds_stats["my"]
-    #y_pred = model(rotation, translation, cable, training=True)
-    return y_pred
+    return y_pred + cable[..., :3]
 
 
 train_step = 0

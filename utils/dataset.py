@@ -140,7 +140,14 @@ def compute_ds_stats(ds):
     return ds_stats
 
 
-def whitening(x1, x2, x3, y, ds_stats):
+def whitening(x1, x2, x3, ds_stats):
+    x1 = (x1 - ds_stats["m1"]) / (ds_stats["s1"] + 1e-8)
+    x2 = (x2 - ds_stats["m2"]) / (ds_stats["s2"] + 1e-8)
+    x3 = (x3 - ds_stats["m3"]) / (ds_stats["s3"] + 1e-8)
+    return x1, x2, x3
+
+
+def whiteningy(x1, x2, x3, y, ds_stats):
     x1 = (x1 - ds_stats["m1"]) / (ds_stats["s1"] + 1e-8)
     x2 = (x2 - ds_stats["m2"]) / (ds_stats["s2"] + 1e-8)
     x3 = (x3 - ds_stats["m3"]) / (ds_stats["s3"] + 1e-8)
@@ -152,9 +159,9 @@ def unpack_rotation(rotation):
     size = rotation.shape[-1]
     step = int(size / 4)
     R_l_0 = rotation[:, :step]
-    R_l_1 = rotation[:, step:2*step]
-    R_r_0 = rotation[:, 2*step:3*step]
-    R_r_1 = rotation[:, 3*step:]
+    R_l_1 = rotation[:, step:2 * step]
+    R_r_0 = rotation[:, 2 * step:3 * step]
+    R_r_1 = rotation[:, 3 * step:]
     return R_l_0, R_l_1, R_r_0, R_r_1
 
 
@@ -162,6 +169,12 @@ def unpack_translation(translation):
     t_l_0 = translation[:, :3]
     t_r_0 = translation[:, 3:]
     return t_l_0, t_r_0
+
+
+def unpack_cable(data):
+    cable = data[..., :3]
+    dcable = data[..., 3:]
+    return cable, dcable
 
 
 def prepare_dataset_cond(path, n=0, quat=False, diff=False, augment=False):
@@ -206,6 +219,8 @@ def prepare_dataset_cond(path, n=0, quat=False, diff=False, augment=False):
                              xyz_l_1 * mul,
                              ], axis=-1).astype(np.float32)
     X3 = cp_0.astype(np.float32) * mul
+    X3d = np.concatenate([X3[:, :1], np.diff(X3, axis=1)], axis=1)
+    X3 = np.concatenate([X3, X3d], axis=-1)
     Y = cp_1.astype(np.float32) * mul
 
     if augment:
@@ -237,6 +252,8 @@ def prepare_dataset_cond(path, n=0, quat=False, diff=False, augment=False):
                                     ], axis=-1).astype(np.float32)
 
         X3aug = cp_0.astype(np.float32) * mul
+        X3daug = np.concatenate([X3aug[:, :1], np.diff(X3aug, axis=1)], axis=1)
+        X3aug = np.concatenate([X3aug, X3daug], axis=-1)
         Yaug = cp_0.astype(np.float32) * mul
 
         X1 = np.concatenate([X1, X1aug], axis=0)

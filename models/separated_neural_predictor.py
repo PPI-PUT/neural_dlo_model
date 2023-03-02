@@ -19,6 +19,7 @@ class SeparatedNeuralPredictor(tf.keras.Model):
             #tf.keras.layers.Dense(N, activation),
         ]
         self.cable = [
+            tf.keras.layers.Flatten(),
             tf.keras.layers.Dense(N, activation),
             #tf.keras.layers.Dense(N, activation),
         ]
@@ -41,14 +42,11 @@ class SeparatedNeuralPredictor(tf.keras.Model):
         for l in self.trans:
             trans = l(trans, training=training)
 
-        dcable = cable[:, 1:] - cable[:, :-1]
-        cable_ = tf.reshape(dcable, (-1, (BSplineConstants.n - 1) * BSplineConstants.dim))
         for l in self.cable:
-            cable_ = l(cable_, training=training)
+            cable = l(cable, training=training)
 
-        x = tf.concat([rot, trans, cable_], axis=-1)
+        x = tf.concat([rot, trans, cable], axis=-1)
         for l in self.fc:
             x = l(x, training=training)
-        x = tf.reshape(x, (-1, BSplineConstants.n , BSplineConstants.dim))
-        x = x + cable
+        x = tf.reshape(x, (-1, BSplineConstants.n, BSplineConstants.dim))
         return x
