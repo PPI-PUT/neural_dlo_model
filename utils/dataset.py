@@ -177,7 +177,8 @@ def unpack_cable(data):
     return cable, dcable
 
 
-def prepare_dataset_cond(path, n=0, quat=False, diff=False, augment=False):
+def prepare_dataset_cond(path, rot, n=0, diff=False, augment=False):
+    assert rot in ["quat", "rotmat", "rotvec"]
     data = np.loadtxt(path, delimiter='\t').astype(np.float32)
     if n > 0:
         idx = np.random.randint(0, data.shape[0] - 1, n)
@@ -195,26 +196,34 @@ def prepare_dataset_cond(path, n=0, quat=False, diff=False, augment=False):
     diff_R_r = np.transpose(R_r_0, (0, 2, 1)) @ R_r_1
     mul = 1.
     if diff:
-        if quat:
+        if rot == "quat":
             X1 = np.concatenate([R.from_matrix(R_l_0).as_quat(), R.from_matrix(diff_R_l).as_quat(),
                                  R.from_matrix(R_r_0).as_quat(), R.from_matrix(diff_R_r).as_quat(),
                                  ], axis=-1).astype(np.float32)
-        else:
+        elif rot == "rotmat":
             X1 = np.concatenate([R_l_0.reshape((-1, 9)), diff_R_l.reshape((-1, 9)),
                                  R_r_0.reshape((-1, 9)), diff_R_r.reshape((-1, 9)),
                                  ], axis=-1)
+        elif rot == "rotvec":
+            X1 = np.concatenate([R.from_matrix(R_l_0).as_rotvec(), R.from_matrix(diff_R_l).as_rotvec(),
+                                 R.from_matrix(R_r_0).as_rotvec(), R.from_matrix(diff_R_r).as_rotvec(),
+                                 ], axis=-1).astype(np.float32)
         X2 = np.concatenate([xyz_l_0 * mul,
                              (xyz_l_1 - xyz_l_0) * mul,
                              ], axis=-1)
     else:
-        if quat:
+        if rot == "quat":
             X1 = np.concatenate([R.from_matrix(R_l_0).as_quat(), R.from_matrix(R_l_1).as_quat(),
                                  R.from_matrix(R_r_0).as_quat(), R.from_matrix(R_r_1).as_quat(),
                                  ], axis=-1).astype(np.float32)
-        else:
+        elif rot == "rotmat":
             X1 = np.concatenate([R_l_0.reshape((-1, 9)), R_l_1.reshape((-1, 9)),
                                  R_r_0.reshape((-1, 9)), R_r_1.reshape((-1, 9)),
                                  ], axis=-1)
+        elif rot == "rotvec":
+            X1 = np.concatenate([R.from_matrix(R_l_0).as_rotvec(), R.from_matrix(R_l_1).as_rotvec(),
+                                 R.from_matrix(R_r_0).as_rotvec(), R.from_matrix(R_r_1).as_rotvec(),
+                                 ], axis=-1).astype(np.float32)
         X2 = np.concatenate([xyz_l_0 * mul,
                              xyz_l_1 * mul,
                              ], axis=-1).astype(np.float32)
@@ -227,26 +236,34 @@ def prepare_dataset_cond(path, n=0, quat=False, diff=False, augment=False):
         if diff:
             bs = Y.shape[0]
             identity = np.tile(np.eye(3)[np.newaxis], (bs, 1, 1))
-            if quat:
+            if rot == "quat":
                 X1aug = np.concatenate([R.from_matrix(R_l_0).as_quat(), R.from_matrix(identity).as_quat(),
                                         R.from_matrix(R_r_0).as_quat(), R.from_matrix(identity).as_quat(),
                                         ], axis=-1).astype(np.float32)
-            else:
+            elif rot == "rotmat":
                 X1aug = np.concatenate([R_l_0.reshape((-1, 9)), identity.reshape((-1, 9)),
                                         R_r_0.reshape((-1, 9)), identity.reshape((-1, 9)),
                                         ], axis=-1)
+            elif rot == "rotvec":
+                X1aug = np.concatenate([R.from_matrix(R_l_0).as_rotvec(), R.from_matrix(identity).as_rotvec(),
+                                        R.from_matrix(R_r_0).as_rotvec(), R.from_matrix(identity).as_rotvec(),
+                                        ], axis=-1).astype(np.float32)
             X2aug = np.concatenate([xyz_l_0 * mul,
                                     np.zeros_like(xyz_l_1) * mul,
                                     ], axis=-1).astype(np.float32)
         else:
-            if quat:
+            if rot == "quat":
                 X1aug = np.concatenate([R.from_matrix(R_l_0).as_quat(), R.from_matrix(R_l_0).as_quat(),
                                         R.from_matrix(R_r_0).as_quat(), R.from_matrix(R_r_0).as_quat(),
                                         ], axis=-1).astype(np.float32)
-            else:
+            elif rot == "rotmat":
                 X1aug = np.concatenate([R_l_0.reshape((-1, 9)), R_l_0.reshape((-1, 9)),
                                         R_r_0.reshape((-1, 9)), R_r_0.reshape((-1, 9)),
                                         ], axis=-1)
+            elif rot == "rotvec":
+                X1aug = np.concatenate([R.from_matrix(R_l_0).as_rotvec(), R.from_matrix(R_l_0).as_rotvec(),
+                                        R.from_matrix(R_r_0).as_rotvec(), R.from_matrix(R_r_0).as_rotvec(),
+                                        ], axis=-1).astype(np.float32)
             X2aug = np.concatenate([xyz_l_0 * mul,
                                     xyz_l_0 * mul,
                                     ], axis=-1).astype(np.float32)
