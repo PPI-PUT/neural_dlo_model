@@ -109,11 +109,15 @@ class ScaleNeuralPredictor1(tf.keras.Model):
         ])
 
 
-    def __call__(self, rotation, translation, cable, training=False):
+    def __call__(self, rotation, translation, cable, true_rotation, true_translation, training=False):
         left_arm_0 = translation[0]
         trans_l = translation[1]
         rot_l = rotation[1]
         rot_r = rotation[3]
+
+        true_trans_l = true_translation[1]
+        true_rot_l = true_rotation[1]
+        true_rot_r = true_rotation[3]
 
         cable_state = tf.concat([cable, left_arm_0[:, tf.newaxis]], axis=1)
 
@@ -131,9 +135,9 @@ class ScaleNeuralPredictor1(tf.keras.Model):
         cable_rot_r = self.rot_r(cable_state_rot_r, training=training)
         cable_trans_l = self.trans_l(cable_state_trans_l, training=training)
 
-        dcable_rot_l = cable_rot_l @ rot_l[:, tf.newaxis, :, tf.newaxis]
-        dcable_rot_r = cable_rot_r @ rot_r[:, tf.newaxis, :, tf.newaxis]
-        dcable_trans_l = cable_trans_l @ trans_l[:, tf.newaxis, :, tf.newaxis]
+        dcable_rot_l = cable_rot_l @ true_rot_l[:, tf.newaxis, :, tf.newaxis]
+        dcable_rot_r = cable_rot_r @ true_rot_r[:, tf.newaxis, :, tf.newaxis]
+        dcable_trans_l = cable_trans_l @ true_trans_l[:, tf.newaxis, :, tf.newaxis]
 
         x = dcable_rot_l + dcable_rot_r + dcable_trans_l
 

@@ -4,7 +4,7 @@ from losses.cable import CableBSplineLoss
 from models.cnn import CNN
 from models.cnn_sep import CNNSep
 from models.inbilstm import INBiLSTM
-from models.scale_neural_predictor import ScaleNeuralPredictor
+from models.scale_neural_predictor import ScaleNeuralPredictor, ScaleNeuralPredictor1
 from models.separated_cnn_neural_predictor import SeparatedCNNNeuralPredictor
 from models.separated_neural_predictor import SeparatedNeuralPredictor
 from utils.bspline import BSpline
@@ -102,7 +102,7 @@ loss = CableBSplineLoss()
 # model = BasicNeuralPredictor()
 # model = SeparatedCNNNeuralPredictor()
 #model = SeparatedNeuralPredictor()
-model = ScaleNeuralPredictor()
+model = ScaleNeuralPredictor1()
 # model = INBiLSTM()
 # model = CNN()
 # model = CNNSep()
@@ -114,8 +114,11 @@ def inference(rotation, translation, cable):
     R_l_0, R_l_1, R_r_0, R_r_1 = unpack_rotation(rotation_)
     t_l_0, t_l_1 = unpack_translation(translation_)
     cable_, dcable_ = unpack_cable(cable_)
-    y_pred_ = model((R_l_0, R_l_1, R_r_0, R_r_1), (t_l_0, t_l_1), dcable_ if ifdcable else cable_)
-    y_pred = y_pred_ * ds_stats["sy"] + ds_stats["my"]
+    y_pred_ = model((R_l_0, R_l_1, R_r_0, R_r_1), (t_l_0, t_l_1), dcable_ if ifdcable else cable_,
+                    unpack_rotation(rotation), unpack_translation(translation))
+    #y_pred_ = model((R_l_0, R_l_1, R_r_0, R_r_1), (t_l_0, t_l_1), dcable_ if ifdcable else cable_)
+    #y_pred = y_pred_ * ds_stats["sy"] + ds_stats["my"]
+    y_pred = y_pred_
     return y_pred + cable[..., :3]
 
 
