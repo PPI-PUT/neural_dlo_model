@@ -39,7 +39,7 @@ class ScaleNeuralPredictor(tf.keras.Model):
     def __call__(self, rotation, translation, cable, training=False):
         left_arm_0 = translation[0]
         trans_l = translation[1]
-        rot_l = rotation[2]
+        rot_l = rotation[1]
         rot_r = rotation[3]
 
         cable_state = tf.concat([cable, left_arm_0[:, tf.newaxis]], axis=1)
