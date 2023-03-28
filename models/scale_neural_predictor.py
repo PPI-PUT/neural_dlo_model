@@ -92,19 +92,19 @@ class ScaleNeuralPredictor1(tf.keras.Model):
 
         self.rot_l = tf.keras.Sequential([
             tf.keras.layers.Dense(N, activation),
-            tf.keras.layers.Dense(BSplineConstants.ncp * BSplineConstants.dim, activation),
+            tf.keras.layers.Dense(BSplineConstants.ncp * BSplineConstants.dim),
             tf.keras.layers.Reshape((BSplineConstants.n, BSplineConstants.dim, BSplineConstants.dim))
         ])
 
         self.rot_r = tf.keras.Sequential([
             tf.keras.layers.Dense(N, activation),
-            tf.keras.layers.Dense(BSplineConstants.ncp * BSplineConstants.dim, activation),
+            tf.keras.layers.Dense(BSplineConstants.ncp * BSplineConstants.dim),
             tf.keras.layers.Reshape((BSplineConstants.n, BSplineConstants.dim, BSplineConstants.dim))
         ])
 
         self.trans_l = tf.keras.Sequential([
             tf.keras.layers.Dense(N, activation),
-            tf.keras.layers.Dense(BSplineConstants.ncp * BSplineConstants.dim, activation),
+            tf.keras.layers.Dense(BSplineConstants.ncp * BSplineConstants.dim),
             tf.keras.layers.Reshape((BSplineConstants.n, BSplineConstants.dim, BSplineConstants.dim))
         ])
 

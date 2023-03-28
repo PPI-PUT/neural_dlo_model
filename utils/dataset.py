@@ -18,6 +18,13 @@ def _ds(title, ds, ds_size, i, batch_size):
             pbar.update(batch_size)
 
 
+def _ds_ref(title, ds, ds_size, i, batch_size):
+    with _tqdm(title, ds_size, i) as pbar:
+        for i, data in enumerate(ds):
+            yield (i, data["x1"], data["x2"], data["x3"], data["y"], data["y1"])
+            pbar.update(batch_size)
+
+
 def prepare_dataset(path, n=0, augment=False):
     data = np.loadtxt(path, delimiter='\t').astype(np.float32)
     if n > 0:
@@ -38,16 +45,19 @@ def prepare_dataset(path, n=0, augment=False):
     # X1 = np.concatenate([R_l_0.reshape((-1, 9)), diff_R_l.reshape((-1, 9)),
     #                     R_r_0.reshape((-1, 9)), diff_R_r.reshape((-1, 9)),
     #                     ], axis=-1)
+    X1 = np.concatenate([R_l_0.reshape((-1, 9)), R_l_1.reshape((-1, 9)),
+                         R_r_0.reshape((-1, 9)), R_r_1.reshape((-1, 9)),
+                         ], axis=-1)
+    # a = R.from_matrix(R_l_0)
+    # X1 = np.concatenate([R.from_matrix(R_l_0).as_quat(), R.from_matrix(diff_R_l).as_quat(),
+    #                     R.from_matrix(R_r_0).as_quat(), R.from_matrix(diff_R_r).as_quat(),
+    #                     ], axis=-1).astype(np.float32)
+    # X1 = np.concatenate([R.from_matrix(R_l_0).as_quat(), R.from_matrix(R_l_1).as_quat(),
+    #                    R.from_matrix(R_r_0).as_quat(), R.from_matrix(R_r_1).as_quat(),
+    #                    ], axis=-1).astype(np.float32)
     # X2 = np.concatenate([xyz_l_0 * mul,
     #                     (xyz_l_1 - xyz_l_0) * mul,
     #                     ], axis=-1)
-    #X1 = np.concatenate([R_l_0.reshape((-1, 9)), R_l_1.reshape((-1, 9)),
-    #                     R_r_0.reshape((-1, 9)), R_r_1.reshape((-1, 9)),
-    #                     ], axis=-1)
-    #a = R.from_matrix(R_l_0)
-    X1 = np.concatenate([R.from_matrix(R_l_0).as_quat(), R.from_matrix(R_l_1).as_quat(),
-                         R.from_matrix(R_r_0).as_quat(), R.from_matrix(R_r_1).as_quat(),
-                         ], axis=-1).astype(np.float32)
     X2 = np.concatenate([xyz_l_0 * mul,
                          xyz_l_1 * mul,
                          ], axis=-1).astype(np.float32)
@@ -55,28 +65,31 @@ def prepare_dataset(path, n=0, augment=False):
     Y = cp_1.astype(np.float32) * mul
 
     if augment:
-        #X1aug = np.concatenate([R.from_matrix(R_l_0).as_quat(), R.from_matrix(R_l_1).as_quat(),
-        #                     R.from_matrix(R_r_0).as_quat(), R.from_matrix(R_r_1).as_quat(),
+        X1aug = np.concatenate([R_l_0.reshape((-1, 9)), R_l_0.reshape((-1, 9)),
+                                R_r_0.reshape((-1, 9)), R_r_0.reshape((-1, 9)),
+                                ], axis=-1).astype(np.float32)
+        # X1aug = np.concatenate([R.from_matrix(R_l_0).as_quat(), R.from_matrix(R_l_0).as_quat(),
+        #                     R.from_matrix(R_r_0).as_quat(), R.from_matrix(R_r_0).as_quat(),
         #                     ], axis=-1).astype(np.float32)
-        #X2aug = np.concatenate([xyz_l_0 * mul,
+        # X2aug = np.concatenate([xyz_l_0 * mul,
         #                     xyz_l_1 * mul,
         #                     ], axis=-1).astype(np.float32)
-        #X3aug = cp_0.astype(np.float32) * mul
-        #Yaug = cp_1.astype(np.float32) * mul
-        X1aug = np.concatenate([R.from_matrix(R_l_0).as_quat(), R.from_matrix(R_l_0).as_quat(),
-                                R.from_matrix(R_r_0).as_quat(), R.from_matrix(R_r_0).as_quat(),
-                                ], axis=-1).astype(np.float32)
+        # X3aug = cp_0.astype(np.float32) * mul
+        # Yaug = cp_1.astype(np.float32) * mul
+        # X1aug = np.concatenate([R.from_matrix(R_l_0).as_quat(), R.from_matrix(R_l_0).as_quat(),
+        #                        R.from_matrix(R_r_0).as_quat(), R.from_matrix(R_r_0).as_quat(),
+        #                        ], axis=-1).astype(np.float32)
         X2aug = np.concatenate([xyz_l_0 * mul,
                                 xyz_l_0 * mul,
                                 ], axis=-1).astype(np.float32)
         X3aug = cp_0.astype(np.float32) * mul
         Yaug = cp_0.astype(np.float32) * mul
-        #zdev = np.eye(BSplineConstants.n)[np.random.randint(0, 16, (Yaug.shape[0]))]
-        #zdev = 0.03 * np.random.random() * np.stack([np.zeros_like(zdev), np.zeros_like(zdev), zdev], axis=-1)
-        #X3aug += zdev
-        #zdev = np.eye(BSplineConstants.n)[np.random.randint(0, 16, (Yaug.shape[0]))]
-        #zdev = 0.03 * np.random.random() * np.stack([np.zeros_like(zdev), np.zeros_like(zdev), zdev], axis=-1)
-        #Yaug += zdev
+        # zdev = np.eye(BSplineConstants.n)[np.random.randint(0, 16, (Yaug.shape[0]))]
+        # zdev = 0.03 * np.random.random() * np.stack([np.zeros_like(zdev), np.zeros_like(zdev), zdev], axis=-1)
+        # X3aug += zdev
+        # zdev = np.eye(BSplineConstants.n)[np.random.randint(0, 16, (Yaug.shape[0]))]
+        # zdev = 0.03 * np.random.random() * np.stack([np.zeros_like(zdev), np.zeros_like(zdev), zdev], axis=-1)
+        # Yaug += zdev
 
         X1 = np.concatenate([X1, X1aug], axis=0)
         X2 = np.concatenate([X2, X2aug], axis=0)
@@ -299,7 +312,8 @@ def prepare_dataset_cond_ref(path, n=0, quat=False, diff=False, augment=False):
     R_r_1 = data[:, 30 + ncp + npts:39 + ncp + npts].reshape((-1, 3, 3))
     xyz_l_1 = data[:, 39 + ncp + npts:42 + ncp + npts]
     cp_1 = data[:, 42 + ncp + npts:42 + 2 * ncp + npts].reshape((-1, BSplineConstants.n, BSplineConstants.dim))
-    pts_1 = data[:, 42 + 2 * ncp + npts: 42 + 2 * ncp + 2 * npts].reshape((-1, BSplineConstants.n, BSplineConstants.dim))
+    pts_1 = data[:, 42 + 2 * ncp + npts: 42 + 2 * ncp + 2 * npts].reshape(
+        (-1, BSplineConstants.n, BSplineConstants.dim))
     diff_R_l = np.transpose(R_l_0, (0, 2, 1)) @ R_l_1
     diff_R_r = np.transpose(R_r_0, (0, 2, 1)) @ R_r_1
     mul = 1.
@@ -416,5 +430,3 @@ def whitening_ref(x1, x2, x3, y, y1, ds_stats):
     y = (y - ds_stats["my"]) / (ds_stats["sy"] + 1e-8)
     y1 = (y1 - ds_stats["my1"]) / (ds_stats["sy1"] + 1e-8)
     return x1, x2, x3, y, y1
-
-

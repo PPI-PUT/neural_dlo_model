@@ -1,6 +1,7 @@
 import os
 
 from losses.cable import CableBSplineLoss
+from losses.cable_pts import CablePtsLoss
 from models.cnn import CNN
 from models.cnn_sep import CNNSep
 from models.inbilstm import INBiLSTM
@@ -29,85 +30,68 @@ np.random.seed(444)
 # config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 class args:
-    # batch_size = 128
-    #batch_size = 64
-    batch_size = 32
+    batch_size = 128
+    # batch_size = 64
+    # batch_size = 32
     working_dir = './trainings'
     # out_name = 'short_ds_bs16_lr5em5_l5x1024_scaledincms_regloss1em4'
     # out_name = 'yz_bs16_lr5em5_l5x256_cm_regloss1em4_bs_keq_dsseparatedbutsorted_traindata10'
-    #out_name = 'xyzrpy_02_09__10_30_bs16_lr5em5_separated_l1x256_l3x256_diffs_mwhithened_regloss1em4_bs_keq'
+    # out_name = 'xyzrpy_02_09__10_30_bs16_lr5em5_separated_l1x256_l3x256_diffs_mwhithened_regloss1em4_bs_keq'
     # out_name = 'xyzrpy_02_09__10_30_bs16_lr5em5_l5x256_m_regloss1em4_bs_keq'
-    #out_name = 'xyzrpy_episodic_all2all_02_09__15_00_dxyzlg5cm_bs64_lr5em5_l5x256_m_regloss0em4_bs_keq_dsmixed'
-    #out_name = 'xyzrpy_episodic_all2all_02_09__15_00_dxyzlg5cm_bs64_lr5em5_separated_l1x256_l3x256_m_regloss0em4_bs_keq_len_yz_curv_yz'
-    #out_name = 'xyzrpy_episodic_all2all_02_10__09_15_bs32_lr5em5_separated_l1x256_l3x256_m_regloss0em4_bs_keq_dsnotmixed_length_loss_1em1'
-    #out_name = 'xyzrpy_episodic_all2all_02_10__10_00_bs32_lr5em5_separated_l1x256_l3x256_m_regloss0em4_bs_keq_dsnotmixed'
-    #out_name = 'xyzrpy_episodic_all2all_02_10__10_20_bs32_lr5em5_separated_l1x256_l3x256_m_regloss0em4_bs_keq_dsnotmixed'
-    #out_name = 'xyzrpy_episodic_all2all_02_10__14_00_bs32_lr5em5_separated_l1x256_l3x256_m_regloss0em4_bs_keq_dsnotmixed_absloss_withened_'
-    #out_name = 'xyzrpy_episodic_all2all_02_10__14_00_p16_bs32_lr5em5_cnn_sep_dsnotmixed_absloss_withened'
-    #out_name = 'xyzrpy_episodic_semisep_all2all_fixed_02_10__14_00_p16_bs32_lr5em5_inbilstm_absloss_withened_quat'
-    out_name = 'xyzrpy_episodic_semisep_all2all_02_21__12_30_cp16_bs32_lr5em5_sep_absloss_withened_quat'
-    #out_name = 'xyzrpy_episodic_semisep_all2all_fixed_02_10__14_00_pts16_bs32_lr5em5_cnn_sep_dsnotmixed_absloss_withened'
-    #out_name = 'xyzrpy_episodic_02_10__14_00_p16_bs32_lr5em5_cnn_dsmixed_absloss_withened'
-    #out_name = 'xyzrpy_episodic_all2all_02_10__14_00_bs32_lr5em5_separated_cablecnn_l1x128_l2x128_outputcnn_m_regloss0em4_bs_keq_dsnotmixed_absloss_withened'
-    #out_name = 'xyzrpy_all2all_02_10__14_00_bs32_lr5em5_separated_l1x256_l3x256_m_regloss0em4_bs_keq_dsmixed_absloss_withened'
-    #out_name = 'test'
+    # out_name = 'xyzrpy_episodic_all2all_02_09__15_00_dxyzlg5cm_bs64_lr5em5_l5x256_m_regloss0em4_bs_keq_dsmixed'
+    # out_name = 'xyzrpy_episodic_all2all_02_09__15_00_dxyzlg5cm_bs64_lr5em5_separated_l1x256_l3x256_m_regloss0em4_bs_keq_len_yz_curv_yz'
+    # out_name = 'xyzrpy_episodic_all2all_02_10__09_15_bs32_lr5em5_separated_l1x256_l3x256_m_regloss0em4_bs_keq_dsnotmixed_length_loss_1em1'
+    # out_name = 'xyzrpy_episodic_all2all_02_10__10_00_bs32_lr5em5_separated_l1x256_l3x256_m_regloss0em4_bs_keq_dsnotmixed'
+    # out_name = 'xyzrpy_episodic_all2all_02_10__10_20_bs32_lr5em5_separated_l1x256_l3x256_m_regloss0em4_bs_keq_dsnotmixed'
+    # out_name = 'xyzrpy_episodic_all2all_02_10__14_00_bs32_lr5em5_separated_l1x256_l3x256_m_regloss0em4_bs_keq_dsnotmixed_absloss_withened_'
+    # out_name = 'xyzrpy_episodic_all2all_02_10__14_00_p16_bs32_lr5em5_cnn_sep_dsnotmixed_absloss_withened'
+    #out_name = 'xyzrpy_episodic_all2all_02_23__01_00_p16_bs128_lr5em5_sep_absloss_withened_diffquat'
+    # out_name = 'xyzrpy_episodic_semisep_all2all_fixed_02_10__14_00_p16_bs32_lr5em5_inbilstm_absloss_withened_quat'
+    # out_name = 'xyzrpy_episodic_semisep_all2all_02_21__12_30_cp16_bs32_lr5em5_sep_l2loss_withened_rotmat_augmentzdev3cmonlyx3'
+    # out_name = 'xyzrpy_episodic_semisep_all2all_fixed_02_10__14_00_pts16_bs32_lr5em5_cnn_sep_dsnotmixed_absloss_withened'
+    # out_name = 'xyzrpy_episodic_02_10__14_00_p16_bs32_lr5em5_cnn_dsmixed_absloss_withened'
+    # out_name = 'xyzrpy_episodic_all2all_02_10__14_00_bs32_lr5em5_separated_cablecnn_l1x128_l2x128_outputcnn_m_regloss0em4_bs_keq_dsnotmixed_absloss_withened'
+    # out_name = 'xyzrpy_all2all_02_10__14_00_bs32_lr5em5_separated_l1x256_l3x256_m_regloss0em4_bs_keq_dsmixed_absloss_withened'
+    # out_name = 'test'
+    out_name = 'new_mb_03_27_test'
     log_interval = 100
-    learning_rate = 5e-5
+    learning_rate = 5e-4
     l2reg = 0e-4
     len_loss = 0
     acc_loss = 0e-1
-    #dataset_path = "./data/prepared_datasets/xyzrpy_episodic_02_10__14_00_p16/train.tsv"
-    dataset_path = "./data/prepared_datasets/xyzrpy_episodic_semisep_all2all_02_21__12_30_cp16/train.tsv"
-    #dataset_path = "./data/prepared_datasets/xyzrpy_episodic_semisep_all2all_fixed_02_10__14_00_p16/train.tsv"
-    #dataset_path = "./data/prepared_datasets/xyzrpy_episodic_semisep_all2all_fixed_02_10__14_00_pts16/train.tsv"
-    #dataset_path = "./data/prepared_datasets/xyzrpy_episodic_all2all_02_10__14_00_p16/train.tsv"
-    #dataset_path = "./data/prepared_datasets/xyzrpy_all2all_02_10__14_00/train.tsv"
-    # dataset_path = "./data/prepared_datasets/yz_big_keq/train.tsv"
-    # dataset_path = "./data/prepared_datasets/yz_big_keq_n1000/train.tsv"
-    # dataset_path = "./data/prepared_datasets/xy_bs_keq/train.tsv"
-    # dataset_path = "./data/prepared_datasets/short_ds/train.tsv"
+    # dataset_path = "./data/xyzrpy_episodic_sep_all2all_with_reference_02_23__01_00_cp16/train.tsv"
+    # dataset_path = "./data/prepared_datasets/xyzrpy_episodic_sep_all2all_with_reference_02_23__01_00_cp16/train.tsv"
+    #dataset_path = "./data/prepared_datasets/xyzrpy_episodic_sep_all2all_02_23__01_00_cp16/train.tsv"
+    #dataset_path = "./data/prepared_datasets/new_1/train.tsv"
+    dataset_path = "./data/prepared_datasets/new_mb_03_27_poc64/train.tsv"
 
 
 diff = True
 #rot = "quat"
 #rot = "rotmat"
 rot = "rotvec"
-ifdcable = True
+#ifdcable = True
+ifdcable = False
 train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=rot, diff=diff)  # , n=10)
-# train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, quat=quat, diff=diff, augment=True)  # , n=10)
+#train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=rot, diff=diff, augment=True)  # , n=10)
 val_ds, val_size, vX1, vX2, vX3, vY = prepare_dataset_cond(args.dataset_path.replace("train", "val"), rot=rot, diff=diff)
-
-#tX1, tX2, tX3, tY, vX1, vX2, vX3, vY, train_size, val_size = mix_datasets(tX1, tX2, tX3, tY, vX1, vX2, vX3, vY)
-#train_ds = tf.data.Dataset.from_tensor_slices({"x1": tX1, "x2": tX2, "x3": tX3, "y": tY})
-#val_ds = tf.data.Dataset.from_tensor_slices({"x1": vX1, "x2": vX2, "x3": vX3, "y": vY})
 
 ds_stats = compute_ds_stats(train_ds)
 
-#tX1, vX1, m1, s1 = whiten(tX1, vX1)
-#X2, vX2, m2, s2 = whiten(tX2, vX2)
-#X3, vX3, m3, s3 = whiten(tX3, vX3)
-#m3, s3 = 0., 1.
-#Y, vY, my, sy = whiten(tY, vY)
-
-#train_ds = tf.data.Dataset.from_tensor_slices({"x1": tX1, "x2": tX2, "x3": tX3, "y": tY})
-#val_ds = tf.data.Dataset.from_tensor_slices({"x1": vX1, "x2": vX2, "x3": vX3, "y": vY})
-
-#bsp = BSpline(25, 3)
-
-
 opt = tf.keras.optimizers.Adam(args.learning_rate)
 
-loss = CableBSplineLoss()
+loss = CablePtsLoss()
 
 # model = BasicNeuralPredictor()
 # model = SeparatedCNNNeuralPredictor()
-#model = SeparatedNeuralPredictor()
-model = ScaleNeuralPredictor1()
+model = SeparatedNeuralPredictor()
+#model = ScaleNeuralPredictor1()
 # model = INBiLSTM()
 # model = CNN()
 # model = CNNSep()
 
 experiment_handler = ExperimentHandler(args.working_dir, args.out_name, args.log_interval, model, opt)
+
 
 def inference(rotation, translation, cable):
     rotation_, translation_, cable_ = whitening(rotation, translation, cable, ds_stats)
@@ -133,95 +117,96 @@ for epoch in range(30000):
     dataset_epoch = dataset_epoch.batch(args.batch_size).prefetch(args.batch_size)
     epoch_loss = []
     prediction_losses = []
-    cp_losses_abs = []
+    pts_losses_abs = []
     pts_losses_euc = []
+    pts_losses_l2 = []
     experiment_handler.log_training()
     for i, rotation, translation, cable, y_gt in _ds('Train', dataset_epoch, train_size, epoch, args.batch_size):
         with tf.GradientTape(persistent=True) as tape:
             y_pred = inference(rotation, translation, cable)
-            cp_loss_abs, cp_loss_euc, cp_loss_l2, \
-            pts_loss_abs, pts_loss_euc, pts_loss_l2, \
-            length_loss, accurv_yz_loss, pred_energy, gt_energy = loss(y_gt, y_pred)
-
-            prediction_loss = cp_loss_abs
+            pts_loss_abs, pts_loss_euc, pts_loss_l2 = loss(y_gt, y_pred)
+            prediction_loss = pts_loss_abs
 
             reg_loss = tf.add_n([tf.nn.l2_loss(v) for v in model.trainable_variables
                                  if 'bias' not in v.name])
-            model_loss = prediction_loss + args.l2reg * reg_loss + args.len_loss * length_loss + args.acc_loss * accurv_yz_loss
+            model_loss = prediction_loss + args.l2reg * reg_loss
         grads = tape.gradient(model_loss, model.trainable_variables)
         opt.apply_gradients(zip(grads, model.trainable_variables))
 
         epoch_loss.append(model_loss)
-        cp_losses_abs.append(cp_loss_abs)
         prediction_losses.append(prediction_loss)
+        pts_losses_abs.append(pts_loss_abs)
         pts_losses_euc.append(pts_loss_euc)
+        pts_losses_l2.append(pts_loss_l2)
 
         with tf.summary.record_if(train_step % args.log_interval == 0):
             tf.summary.scalar('metrics/model_loss', tf.reduce_mean(model_loss), step=train_step)
             tf.summary.scalar('metrics/prediction_loss', tf.reduce_mean(prediction_loss), step=train_step)
-            tf.summary.scalar('metrics/cp_loss_abs', tf.reduce_mean(cp_loss_abs), step=train_step)
+            tf.summary.scalar('metrics/pts_loss_abs', tf.reduce_mean(pts_loss_abs), step=train_step)
             tf.summary.scalar('metrics/pts_loss_euc', tf.reduce_mean(pts_loss_euc), step=train_step)
-            tf.summary.scalar('metrics/length_loss', tf.reduce_mean(length_loss), step=train_step)
-            tf.summary.scalar('metrics/accurv_yz_loss', tf.reduce_mean(accurv_yz_loss), step=train_step)
+            tf.summary.scalar('metrics/pts_loss_l2', tf.reduce_mean(pts_loss_l2), step=train_step)
             tf.summary.scalar('metrics/reg_loss', tf.reduce_mean(reg_loss), step=train_step)
         train_step += 1
 
     epoch_loss = tf.reduce_mean(tf.concat(epoch_loss, -1))
     prediction_losses = tf.reduce_mean(tf.concat(prediction_losses, -1))
-    cp_losses_abs = tf.reduce_mean(tf.concat(cp_losses_abs, -1))
+    pts_losses_abs = tf.reduce_mean(tf.concat(pts_losses_abs, -1))
     pts_losses_euc = tf.reduce_mean(tf.concat(pts_losses_euc, -1))
+    pts_losses_l2 = tf.reduce_mean(tf.concat(pts_losses_l2, -1))
 
     with tf.summary.record_if(True):
         tf.summary.scalar('epoch/loss', epoch_loss, step=epoch)
         tf.summary.scalar('epoch/prediction_loss', prediction_losses, step=epoch)
-        tf.summary.scalar('epoch/cp_loss_abs', cp_losses_abs, step=epoch)
+        tf.summary.scalar('epoch/pts_loss_abs', pts_losses_abs, step=epoch)
         tf.summary.scalar('epoch/pts_loss_euc', pts_losses_euc, step=epoch)
+        tf.summary.scalar('epoch/pts_loss_l2', pts_losses_l2, step=epoch)
 
     # validation
     dataset_epoch = val_ds.shuffle(val_size)
     dataset_epoch = dataset_epoch.batch(args.batch_size).prefetch(args.batch_size)
     epoch_loss = []
     prediction_losses = []
-    cp_losses_abs = []
+    pts_losses_abs = []
     pts_losses_euc = []
+    pts_losses_l2 = []
     experiment_handler.log_validation()
     for i, rotation, translation, cable, y_gt in _ds('Val', dataset_epoch, val_size, epoch, args.batch_size):
         y_pred = inference(rotation, translation, cable)
-        cp_loss_abs, cp_loss_euc, cp_loss_l2,\
-        pts_loss_abs, pts_loss_euc, pts_loss_l2,\
-        length_loss, accurv_yz_loss, pred_energy, gt_energy = loss(y_gt, y_pred)
-
-        prediction_loss = cp_loss_abs
+        pts_loss_abs, pts_loss_euc, pts_loss_l2 = loss(y_gt, y_pred)
+        prediction_loss = pts_loss_abs
 
         reg_loss = tf.add_n([tf.nn.l2_loss(v) for v in model.trainable_variables
                              if 'bias' not in v.name])
-        model_loss = prediction_loss + args.l2reg * reg_loss + args.len_loss * length_loss + args.acc_loss * accurv_yz_loss
+        model_loss = prediction_loss + args.l2reg * reg_loss
 
         epoch_loss.append(model_loss)
-        cp_losses_abs.append(cp_loss_abs)
         prediction_losses.append(prediction_loss)
+        pts_losses_abs.append(pts_loss_abs)
         pts_losses_euc.append(pts_loss_euc)
+        pts_losses_l2.append(pts_loss_l2)
 
         with tf.summary.record_if(val_step % args.log_interval == 0):
             tf.summary.scalar('metrics/model_loss', tf.reduce_mean(model_loss), step=val_step)
             tf.summary.scalar('metrics/prediction_loss', tf.reduce_mean(prediction_loss), step=train_step)
-            tf.summary.scalar('metrics/pts_loss_euc', tf.reduce_mean(pts_loss_euc), step=train_step)
-            tf.summary.scalar('metrics/cp_loss_abs', tf.reduce_mean(cp_loss_abs), step=val_step)
-            tf.summary.scalar('metrics/length_loss', tf.reduce_mean(length_loss), step=val_step)
-            tf.summary.scalar('metrics/accurv_yz_loss', tf.reduce_mean(accurv_yz_loss), step=val_step)
+            tf.summary.scalar('metrics/pts_loss_abs', tf.reduce_mean(pts_loss_abs), step=val_step)
+            tf.summary.scalar('metrics/pts_loss_euc', tf.reduce_mean(pts_loss_euc), step=val_step)
+            tf.summary.scalar('metrics/pts_loss_l2', tf.reduce_mean(pts_loss_l2), step=val_step)
             tf.summary.scalar('metrics/reg_loss', tf.reduce_mean(reg_loss), step=val_step)
         val_step += 1
 
     epoch_loss = tf.reduce_mean(tf.concat(epoch_loss, -1))
-    cp_losses_abs = tf.reduce_mean(tf.concat(cp_losses_abs, -1))
     pts_losses_euc = tf.reduce_mean(tf.concat(pts_losses_euc, -1))
     prediction_losses = tf.reduce_mean(tf.concat(prediction_losses, -1))
+    pts_losses_abs = tf.reduce_mean(tf.concat(pts_losses_abs, -1))
+    pts_losses_euc = tf.reduce_mean(tf.concat(pts_losses_euc, -1))
+    pts_losses_l2 = tf.reduce_mean(tf.concat(pts_losses_l2, -1))
 
     with tf.summary.record_if(True):
         tf.summary.scalar('epoch/loss', epoch_loss, step=epoch)
         tf.summary.scalar('epoch/prediction_loss', prediction_losses, step=epoch)
-        tf.summary.scalar('epoch/cp_loss_abs', cp_losses_abs, step=epoch)
+        tf.summary.scalar('epoch/pts_loss_abs', pts_losses_abs, step=epoch)
         tf.summary.scalar('epoch/pts_loss_euc', pts_losses_euc, step=epoch)
+        tf.summary.scalar('epoch/pts_loss_l2', pts_losses_l2, step=epoch)
 
     w = 20
     if epoch % w == w - 1:

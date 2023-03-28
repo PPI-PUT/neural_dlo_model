@@ -34,7 +34,7 @@ class SeparatedNeuralPredictor(tf.keras.Model):
             tf.keras.layers.Dense(BSplineConstants.ncp),
         ]
 
-    def __call__(self, rotation, translation, cable, training=False):
+    def __call__(self, rotation, translation, cable, true_rotation, true_translation, training=False):
         rot = tf.concat(rotation, axis=-1)
         trans = tf.concat(translation, axis=-1)
         for l in self.rot:
