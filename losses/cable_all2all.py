@@ -5,9 +5,33 @@ import numpy as np
 from utils.geometry import compute_curve_energy
 
 
+class CableAll2AllLoss:
+    def __init__(self):
+        pass
+
+    def __call__(self, gt, pred):
+        vgt = gt.numpy()[:, np.newaxis]
+        vpred = pred.numpy()[:, :, np.newaxis]
+
+        diff = (vgt - vpred)
+
+        l1 = np.linalg.norm(diff, axis=-1)
+        l2 = np.linalg.norm(diff, axis=-1)
+
+        l1 = np.min(l1, axis=1)
+        l2 = np.min(l2, axis=2)
+
+        l1 = np.mean(l1, axis=-1)
+        l2 = np.mean(l2, axis=-1)
+
+        l12 = (l1 + l2) / 2.
+
+        return l1, l2, l12
+
+
 class CableBSplineAll2AllLoss:
     def __init__(self):
-        self.bsp = BSpline(BSplineConstants.n, BSplineConstants.dim)
+        self.bsp = BSpline(BSplineConstants.n, BSplineConstants.dim, num_T_pts=256)
 
     def __call__(self, gt, pred):
         vgt = (self.bsp.N @ gt).numpy()[:, np.newaxis]
@@ -27,6 +51,7 @@ class CableBSplineAll2AllLoss:
         l12 = (l1 + l2) / 2.
 
         return l1, l2, l12
+
 
 class CableBSplineAll2AllXYZLoss:
     def __init__(self):
