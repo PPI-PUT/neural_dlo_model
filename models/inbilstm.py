@@ -50,11 +50,13 @@ class INBiLSTM(tf.keras.Model):
             tf.keras.layers.Dense(N, activation),
         ]
 
-    def __call__(self, rotation, translation, points, training=False):
+    def __call__(self, rotation, translation, cable, true_rotation, true_translation, training=False):
         #left_action = tf.concat([rotation[:, :18], translation], axis=-1)
         #right_action = rotation[:, 18:]
         left_action = tf.concat([rotation[0], rotation[1], *translation], axis=-1)
         right_action = tf.concat(rotation[2:], axis=-1)
+
+        points = cable
         edges = points[:, 1:] - points[:, :-1]
         reverse_edges = points[:, :-1] - points[:, 1:]
 
@@ -81,5 +83,4 @@ class INBiLSTM(tf.keras.Model):
 
         dpoints = self.point_predictor(dpoints, training=training)
 
-        new_points = points + dpoints
-        return new_points
+        return dpoints
