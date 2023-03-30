@@ -5,7 +5,7 @@ from losses.cable_pts import CablePtsLoss
 from models.cnn import CNN
 from models.cnn_sep import CNNSep
 from models.inbilstm import INBiLSTM
-from models.scale_neural_predictor import ScaleNeuralPredictor, ScaleNeuralPredictor1
+from models.scale_neural_predictor import ScaleNeuralPredictor, ScaleNeuralPredictor1, ScaleNeuralPredictor2
 from models.separated_cnn_neural_predictor import SeparatedCNNNeuralPredictor
 from models.separated_neural_predictor import SeparatedNeuralPredictor
 from utils.bspline import BSpline
@@ -84,9 +84,10 @@ loss = CablePtsLoss()
 
 # model = BasicNeuralPredictor()
 # model = SeparatedCNNNeuralPredictor()
-model = SeparatedNeuralPredictor()
+#model = SeparatedNeuralPredictor()
 #model = ScaleNeuralPredictor1()
-# model = INBiLSTM()
+model = ScaleNeuralPredictor2()
+#model = INBiLSTM()
 # model = CNN()
 # model = CNNSep()
 
