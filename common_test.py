@@ -11,6 +11,8 @@ from models.separated_neural_predictor import SeparatedNeuralPredictor
 from utils.bspline import BSpline
 from utils.constants import BSplineConstants
 
+from utils.geometry import calculateL3
+
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 import numpy as np
@@ -30,6 +32,9 @@ tf.random.set_seed(444)
 # assert len(physical_devices) > 0, "Not enough GPU hardware devices available"
 # config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
+#plot = False
+plot = True
+
 class args:
     #batch_size = 128
     batch_size = 1
@@ -43,26 +48,30 @@ class args:
     #dataset_path = "./data/prepared_datasets/xyzrpy_episodic_sep_all2all_02_23__01_00_cp16/train.tsv"
     #dataset_path = "./data/prepared_datasets/xyzrpy_episodic_sep_all2all_03_01__08_00_cp16/train.tsv"
 
-    dataset_path = "./data/prepared_datasets/new_mb_03_27_poc64/train.tsv"
+    #dataset_path = "./data/prepared_datasets/new_mb_03_27_poc64/train.tsv"
+    dataset_path = "./data/prepared_datasets/new_mb_45cm_04_03/train.tsv"
 
 
 #rot = "quat"
-rot = "rotvec"
+#rot = "rotvec"
+rot = "rotmat"
+#diff = True
 diff = False
-ifdcable = False
+#ifdcable = False
+ifdcable = True
 train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot, diff=diff, augment=True)
 #train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset(args.dataset_path, augment=True)  # , n=10)
 #train_ds_, train_size_, tX1_, tX2_, tX3_, tY_ = prepare_dataset(args.dataset_path)  # , n=10)
 #val_ds, val_size, vX1, vX2, vX3, vY = prepare_dataset(args.dataset_path.replace("train", "val"))
 val_ds, val_size, vX1, vX2, vX3, vY = prepare_dataset_cond(args.dataset_path.replace("train", "val"), rot, diff=diff, augment=False)
-#test_ds, test_size, teX1, teX2, teX3, teY = prepare_dataset(args.dataset_path.replace("train", "test"))
+test_ds, test_size, teX1, teX2, teX3, teY = prepare_dataset_cond(args.dataset_path.replace("train", "test"), rot, diff=diff, augment=False)
 
 ds_stats = compute_ds_stats(train_ds)
 #ds_stats_ = compute_ds_stats(train_ds_)
 
 #ds, ds_size = train_ds, train_size
-ds, ds_size = val_ds, val_size
-#ds, ds_size = test_ds, test_size
+#ds, ds_size = val_ds, val_size
+ds, ds_size = test_ds, test_size
 
 bsp = BSpline(BSplineConstants.n, BSplineConstants.dim)
 
@@ -77,7 +86,9 @@ model = SeparatedNeuralPredictor()
 # model = CNN()
 
 ckpt = tf.train.Checkpoint(model=model)
-ckpt.restore("./trained_models/all_mb_03_27/new_mb_03_27_poc64_lr5em4_bs128_sep_nodiff_rotvec_cable_augwithzeros/last_n-293")
+#ckpt.restore("./trained_models/all_mb_03_27/new_mb_03_27_poc64_lr5em4_bs128_sep_nodiff_rotvec_cable_augwithzeros/last_n-293")
+ckpt.restore("./trained_models/all_mb_03_27/new_mb_03_27_poc64_lr5em4_bs128_sep_nodiff_rotmat_dcable_augwithzeros/checkpoints/best-127")
+#ckpt.restore("./trained_models/all_mb_03_27/new_mb_03_27_poc64_lr5em4_bs128_sep_diff_rotmat_dcable_augwithzeros_/checkpoints/best-91")
 
 
 
@@ -119,9 +130,6 @@ def compute_length(cp):
     return length
 
 
-#plot = False
-plot = True
-
 dataset_epoch = ds#.shuffle(ds_size)
 dataset_epoch = dataset_epoch.batch(args.batch_size).prefetch(args.batch_size)
 epoch_loss = []
@@ -141,10 +149,23 @@ for i, rotation, translation, cable, y_gt in _ds('Train', dataset_epoch, ds_size
     # ratio_loss = tf.reduce_mean(ratio, axis=-1)
     #ratio_loss = np.mean(np.linalg.norm(y_gt - y_pred, axis=-1), axis=-1) / (
     #            np.mean(np.linalg.norm(y_gt - cable, axis=-1), axis=-1) + 1e-8)
+    for i in range(y_pred.shape[0]):
+        #frechet_dist_gtpred = frdist(y_gt[i], y_pred[i])
+        #frechet_dist_gtcable = frdist(y_gt[i], cable[i])
+        #dtw_gtpred = dtw(y_gt[i], y_pred[i])
+        #dtw_gtcable = dtw(y_gt[i], cable[i])
+        L3_gtpred = calculateL3(y_gt[i].numpy().T, y_pred[i].numpy().T)
+        L3_gtcable = calculateL3(y_gt[i].numpy().T, cable[i].numpy().T)
+        a = 0
+        ratio_loss = L3_gtpred / (L3_gtcable + 1e-8)
+        print("L3:", L3_gtpred)
+        print("RATIO:", ratio_loss)
+        ratio_losses.append(ratio_loss)
+
     _, _, l12_gtpred = loss_all2all(y_gt, y_pred)
     _, _, l12_gtcable = loss_all2all(y_gt, cable)
-    ratio_loss = l12_gtpred / (l12_gtcable + 1e-8)
-    print(ratio_loss)
+    #ratio_loss = l12_gtpred / (l12_gtcable + 1e-8)
+    #print(ratio_loss)
     # ratio_loss = tf.reduce_sum(np.abs(y_gt - y_pred) / (np.abs(y_gt - cable) + 1e-8), axis=(-2, -1))
 
     prediction_loss = pts_loss_abs
@@ -197,16 +218,16 @@ for i, rotation, translation, cable, y_gt in _ds('Train', dataset_epoch, ds_size
         # plt.ylim(-0.4, 0.4)
         plt.legend()
         plt.show()
+        a = 0
 
     epoch_loss.append(model_loss)
     pts_losses_abs.append(pts_loss_abs)
     prediction_losses.append(prediction_loss)
     pts_losses_euc.append(pts_loss_euc)
-    ratio_losses.append(ratio_loss)
     l12_losses.append(l12_gtpred)
     l12ref.append(l12_gtcable)
 
-ratio_losses = np.concatenate(ratio_losses, -1)
+ratio_losses = np.array(ratio_losses)
 l12_losses = np.concatenate(l12_losses, -1)
 l12ref = np.concatenate(l12ref, -1)
 
