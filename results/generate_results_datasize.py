@@ -8,15 +8,9 @@ def argsort(seq):
     # http://stackoverflow.com/questions/3071415/efficient-method-to-calculate-the-rank-vector-of-a-list-in-python
     return sorted(range(len(seq)), key=seq.__getitem__)
 
-#data = np.load("results_all_new_aug_.npy", allow_pickle=True)[()]
-#data = np.load("results_all_new_mb.npy", allow_pickle=True)[()]
-#data = np.load("results_all_new_mb_sep.npy", allow_pickle=True)[()]
-#data = np.load("results_all_new_mb_inbilstm_.npy", allow_pickle=True)[()]
-from matplotlib.lines import Line2D
-
 data = {}
 prefix = "new_mb_03_27_poc64_lr5em4_bs128"
-for r in glob(f"results/percent_mb_03_27/{prefix}*.npy"):
+for r in glob(f"percent_mb_03_27/{prefix}*.npy"):
     d = np.load(r, allow_pickle=True)[()]
     name = r.split("/")[-1][len(prefix)+1:-4]
     data[name] = d

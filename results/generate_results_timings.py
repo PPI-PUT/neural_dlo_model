@@ -10,11 +10,11 @@ def argsort(seq):
 
 data = {}
 prefix = "new_mb_03_27_poc64_lr5em4_bs128"
-for r in glob(f"results/timings_cpu/{prefix}*.npy"):
+for r in glob(f"timings_cpu/{prefix}*.npy"):
     d = np.load(r, allow_pickle=True)[()]
     name = r.split("/")[-1][len(prefix)+1:-4]
     data["cpu_" + name.split("_")[0]] = d
-for r in glob(f"results/timings_gpu/{prefix}*.npy"):
+for r in glob(f"timings_gpu/{prefix}*.npy"):
     d = np.load(r, allow_pickle=True)[()]
     name = r.split("/")[-1][len(prefix)+1:-4]
     data["gpu_" + name.split("_")[0]] = d

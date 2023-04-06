@@ -32,33 +32,27 @@ np.random.seed(444)
 # config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 #mod = ["sep", "inbilstm"]
+#mod = ["sep"]
+mod = ["inbilstm"]
+qr = ["quat", "rotmat", "rotvec"]
+diff = ["nodiff", "diff"]
+aug = ["noaug", "augwithzeros"]
+cab = ["cable", "dcable"]
+
 results = {}
 
-#m = "sep"
-m = "inbilstm"
-q = "rotmat"
-d = "nodiff"
-c = "dcable"
+#for m, p, q, d in product(mod, pts, qr, diff):
+#    print(m, p, q, d)
+for m, q, c, d, a in product(mod, qr, cab, diff, aug):
+    print(m, q, c, d, a)
 
-class args:
-    batch_size = 128
-    working_dir = './trainings'
-    dataset_path = f"./data/prepared_datasets/new_mb_03_27_poc64/train.tsv"
+    class args:
+        batch_size = 128
+        working_dir = '../trainings'
+        dataset_path = f"../data/prepared_datasets/new_mb_03_27_poc64/train.tsv"
 
 
-for path in glob(f"./trained_models/percents_mb_03_27/new_mb_03_27_poc64_lr5em4_bs128_{m}_{d}_{q}_{c}_*"):
-    name = path.split("/")[-1]
-    share = path.split("_")[-1][:-13]
-    dataset_size = 0.01
-    if share.startswith("0"):
-        mul = float("." + share[1:])
-    else:
-        mul = float(share.replace("d", "."))
-    dataset_size *= mul
-
-    augument = "augwithzeros" in path
-    train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=q, diff=(d == "diff"), augment=augument)
-    train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=q, diff=(d == "diff"), augment=augument, n=int(train_size * dataset_size))
+    train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=q, diff=(d == "diff"), augment=(a == "augwithzeros"))
     val_ds, val_size, vX1, vX2, vX3, vY = prepare_dataset_cond(args.dataset_path.replace("train", "val"), rot=q, diff=(d == "diff"))
     test_ds, test_size, teX1, teX2, teX3, teY = prepare_dataset_cond(args.dataset_path.replace("train", "test"), rot=q, diff=(d == "diff"))
 
@@ -81,8 +75,11 @@ for path in glob(f"./trained_models/percents_mb_03_27/new_mb_03_27_poc64_lr5em4_
         assert False
 
     ckpt = tf.train.Checkpoint(model=model)
+    name = f"new_mb_03_27_poc64_lr5em4_bs128_{m}_{d}_{q}_{c}_{a}"
+    dirname = "all_mb_03_27"
+    path = f"../trained_models/{dirname}/{name}/checkpoints"
     print(path)
-    best_list = list(glob(os.path.join(path, "checkpoints", "best-*.index")))
+    best_list = list(glob(os.path.join(path, "best-*.index")))
     if not best_list:
         continue
     best = best_list[0][:-6]
@@ -143,7 +140,6 @@ for path in glob(f"./trained_models/percents_mb_03_27/new_mb_03_27_poc64_lr5em4_
         "pts_loss_euc": pts_losses_euc,
     }
 
-    os.makedirs("results/percent_mb_03_27", exist_ok=True)
-    np.save(f"results/percent_mb_03_27/{name}.npy", results)
+    np.save(f"{dirname}/{name}.npy", results)
 
 #np.save("results_all_new_mb.npy", results)

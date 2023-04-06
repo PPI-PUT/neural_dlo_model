@@ -34,7 +34,7 @@ np.random.seed(444)
 #path = f"./trained_models/all_mb_03_27/new_mb_03_27_poc64_lr5em4_bs128_inbilstm_nodiff_rotvec_cable_noaug/checkpoints"
 #path = f"./trained_models/all_mb_03_27/new_mb_03_27_poc64_lr5em4_bs128_inbilstm_nodiff_rotvec_cable_augwithzeros/checkpoints"
 
-path = f"./trained_models/all_mb_03_27/new_mb_03_27_poc64_lr5em4_bs128_sep_nodiff_rotmat_dcable_augwithzeros/checkpoints"
+path = f"../trained_models/all_mb_03_27/new_mb_03_27_poc64_lr5em4_bs128_sep_nodiff_rotmat_dcable_augwithzeros/checkpoints"
 #path = f"./trained_models/all_mb_03_27/new_mb_03_27_poc64_lr5em4_bs128_inbilstm_nodiff_rotvec_cable_augwithzeros/checkpoints"
 name = path.split("/")[-2]
 name_fields = name.split("_")
@@ -47,8 +47,8 @@ a = name_fields[11]
 
 time_stats = {}
 class args:
-    working_dir = './trainings'
-    dataset_path = f"./data/prepared_datasets/new_mb_03_27_poc64/train.tsv"
+    working_dir = '../trainings'
+    dataset_path = f"../data/prepared_datasets/new_mb_03_27_poc64/train.tsv"
 
 
 train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=q, diff=(d == "diff"), augment=(a == "augwithzeros"))
@@ -109,5 +109,5 @@ for bs in [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]:
     print()
     time_stats[bs] = np.array(times)
 
-#np.save(f"results/timings_gpu/{name}.npy", time_stats)
-np.save(f"results/timings_cpu/{name}.npy", time_stats)
+#np.save(f"timings_gpu/{name}.npy", time_stats)
+np.save(f"timings_cpu/{name}.npy", time_stats)

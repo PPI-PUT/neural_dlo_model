@@ -42,11 +42,11 @@ c = "dcable"
 
 class args:
     batch_size = 128
-    working_dir = './trainings'
-    dataset_path = f"./data/prepared_datasets/new_mb_45cm_04_03/train.tsv"
+    working_dir = '../trainings'
+    dataset_path = f"../data/prepared_datasets/new_mb_45cm_04_03/train.tsv"
 
 
-for path in glob(f"./trained_models/lengths2_mb_03_04/new_mb_*"):
+for path in glob(f"../trained_models/lengths2_mb_03_04/new_mb_*"):
     name = path.split("/")[-1]
 
     augument = "augwithzeros" in path
@@ -135,7 +135,7 @@ for path in glob(f"./trained_models/lengths2_mb_03_04/new_mb_*"):
         "pts_loss_euc": pts_losses_euc,
     }
 
-    os.makedirs("results/lengths2_mb_04_03", exist_ok=True)
-    np.save(f"results/lengths2_mb_04_03/{name}.npy", results)
+    os.makedirs("lengths2_mb_04_03", exist_ok=True)
+    np.save(f"lengths2_mb_04_03/{name}.npy", results)
 
 #np.save("results_all_new_mb.npy", results)

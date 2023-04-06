@@ -12,7 +12,7 @@ from matplotlib.lines import Line2D
 
 data = {}
 prefix = "new_mb_03_27_poc64_lr5em4_bs128"
-for r in glob(f"results/all_mb_03_27/{prefix}*.npy"):
+for r in glob(f"all_mb_03_27/{prefix}*.npy"):
     d = np.load(r, allow_pickle=True)[()]
     name = r.split("/")[-1][len(prefix)+1:-4]
     data[name] = d

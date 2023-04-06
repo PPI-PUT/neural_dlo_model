@@ -4,16 +4,12 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 
-#data = np.load("results_all_new_aug_.npy", allow_pickle=True)[()]
-#data = np.load("results_all_new_mb.npy", allow_pickle=True)[()]
-#data = np.load("results_all_new_mb_sep.npy", allow_pickle=True)[()]
-#data = np.load("results_all_new_mb_inbilstm_.npy", allow_pickle=True)[()]
 from matplotlib.lines import Line2D
 
 data = []
 paths = []
 prefix = "new_mb_"
-for r in sorted(glob(f"results/lengths2_mb_04_03/{prefix}*.npy")):
+for r in sorted(glob(f"lengths2_mb_04_03/{prefix}*.npy")):
     d = np.load(r, allow_pickle=True)[()]
     data.append(d)
     paths.append(r)
