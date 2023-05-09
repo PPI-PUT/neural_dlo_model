@@ -8,6 +8,7 @@ from models.inbilstm import INBiLSTM
 from models.scale_neural_predictor import ScaleNeuralPredictor, ScaleNeuralPredictor1, ScaleNeuralPredictor2
 from models.separated_cnn_neural_predictor import SeparatedCNNNeuralPredictor
 from models.separated_neural_predictor import SeparatedNeuralPredictor
+from models.transformer import Transformer
 from utils.bspline import BSpline
 from utils.constants import BSplineConstants
 
@@ -86,10 +87,11 @@ loss = CablePtsLoss()
 # model = SeparatedCNNNeuralPredictor()
 #model = SeparatedNeuralPredictor()
 #model = ScaleNeuralPredictor1()
-model = ScaleNeuralPredictor2()
+#model = ScaleNeuralPredictor2()
 #model = INBiLSTM()
 # model = CNN()
 # model = CNNSep()
+model = Transformer(num_layers=2, num_heads=8, dff=256, d_model=64, dropout_rate=0.1, target_size=3)
 
 experiment_handler = ExperimentHandler(args.working_dir, args.out_name, args.log_interval, model, opt)
 
