@@ -42,14 +42,15 @@ class args:
     dataset_path = "./data/prepared_datasets/left_right_mb_03_30/train.tsv"
 
 
-diff = True
+#diff = True
+diff = False
 #rot = "quat"
-#rot = "rotmat"
-rot = "rotvec"
+rot = "rotmat"
+#rot = "rotvec"
 #ifdcable = True
 ifdcable = False
-train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_left_right_cond(args.dataset_path, rot=rot, diff=diff)  # , n=10)
-#train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=rot, diff=diff, augment=True)  # , n=10)
+#train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_left_right_cond(args.dataset_path, rot=rot, diff=diff)  # , n=10)
+train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_left_right_cond(args.dataset_path, rot=rot, diff=diff, augment=True)  # , n=10)
 val_ds, val_size, vX1, vX2, vX3, vY = prepare_dataset_left_right_cond(args.dataset_path.replace("train", "val"), rot=rot, diff=diff)
 
 ds_stats = compute_ds_stats(train_ds)

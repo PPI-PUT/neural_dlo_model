@@ -1,4 +1,5 @@
 import os
+from time import perf_counter
 
 from losses.cable import CableBSplineLoss
 from losses.cable_pts import CablePtsLoss
@@ -12,7 +13,7 @@ from models.transformer import Transformer
 from utils.bspline import BSpline
 from utils.constants import BSplineConstants
 
-# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+#os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 import numpy as np
 import tensorflow as tf
@@ -31,7 +32,8 @@ np.random.seed(444)
 # config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 class args:
-    batch_size = 128
+    #batch_size = 128
+    batch_size = 1
     # batch_size = 64
     # batch_size = 32
     working_dir = './trainings'
@@ -53,8 +55,9 @@ class args:
     # out_name = 'xyzrpy_episodic_02_10__14_00_p16_bs32_lr5em5_cnn_dsmixed_absloss_withened'
     # out_name = 'xyzrpy_episodic_all2all_02_10__14_00_bs32_lr5em5_separated_cablecnn_l1x128_l2x128_outputcnn_m_regloss0em4_bs_keq_dsnotmixed_absloss_withened'
     # out_name = 'xyzrpy_all2all_02_10__14_00_bs32_lr5em5_separated_l1x256_l3x256_m_regloss0em4_bs_keq_dsmixed_absloss_withened'
-    # out_name = 'test'
-    out_name = 'new_mb_03_27_test'
+    out_name = 'test'
+    #out_name = 'new_mb_03_27_test'
+    #out_name = 'new_mb_03_27_poc64_transformer_l2_h8_dff256_d64_drop01'
     log_interval = 100
     learning_rate = 5e-4
     l2reg = 0e-4
@@ -64,7 +67,8 @@ class args:
     # dataset_path = "./data/prepared_datasets/xyzrpy_episodic_sep_all2all_with_reference_02_23__01_00_cp16/train.tsv"
     #dataset_path = "./data/prepared_datasets/xyzrpy_episodic_sep_all2all_02_23__01_00_cp16/train.tsv"
     #dataset_path = "./data/prepared_datasets/new_1/train.tsv"
-    dataset_path = "./data/prepared_datasets/new_mb_03_27_poc64/train.tsv"
+    #dataset_path = "./data/prepared_datasets/new_mb_03_27_poc64/train.tsv"
+    dataset_path = "./data/prepared_datasets/06_09_final_off3cm_50cm/train.tsv"
 
 
 diff = True
@@ -124,9 +128,14 @@ for epoch in range(30000):
     pts_losses_euc = []
     pts_losses_l2 = []
     experiment_handler.log_training()
+    times = []
     for i, rotation, translation, cable, y_gt in _ds('Train', dataset_epoch, train_size, epoch, args.batch_size):
         with tf.GradientTape(persistent=True) as tape:
+            t0 = perf_counter()
             y_pred = inference(rotation, translation, cable)
+            t1 = perf_counter()
+            times.append(t1 - t0)
+            print(t1 - t0)
             pts_loss_abs, pts_loss_euc, pts_loss_l2 = loss(y_gt, y_pred)
             prediction_loss = pts_loss_abs
 
@@ -150,6 +159,9 @@ for epoch in range(30000):
             tf.summary.scalar('metrics/pts_loss_l2', tf.reduce_mean(pts_loss_l2), step=train_step)
             tf.summary.scalar('metrics/reg_loss', tf.reduce_mean(reg_loss), step=train_step)
         train_step += 1
+    print(times)
+    print(np.mean(times))
+    assert False
 
     epoch_loss = tf.reduce_mean(tf.concat(epoch_loss, -1))
     prediction_losses = tf.reduce_mean(tf.concat(prediction_losses, -1))

@@ -8,6 +8,7 @@ from models.cnn import CNN
 from models.inbilstm import INBiLSTM
 from models.separated_cnn_neural_predictor import SeparatedCNNNeuralPredictor
 from models.separated_neural_predictor import SeparatedNeuralPredictor
+from models.transformer import Transformer
 from utils.bspline import BSpline
 from utils.constants import BSplineConstants
 
@@ -32,12 +33,12 @@ tf.random.set_seed(444)
 # assert len(physical_devices) > 0, "Not enough GPU hardware devices available"
 # config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-#plot = False
-plot = True
+plot = False
+#plot = True
 
 class args:
-    #batch_size = 128
-    batch_size = 1
+    batch_size = 128
+    #batch_size = 1
     # batch_size = 32
     working_dir = './trainings'
     # dataset_path = "./data/prepared_datasets/xyzrpy_episodic_all2all_02_10__14_00_p16/train.tsv"
@@ -49,7 +50,9 @@ class args:
     #dataset_path = "./data/prepared_datasets/xyzrpy_episodic_sep_all2all_03_01__08_00_cp16/train.tsv"
 
     #dataset_path = "./data/prepared_datasets/new_mb_03_27_poc64/train.tsv"
-    dataset_path = "./data/prepared_datasets/new_mb_45cm_04_03/train.tsv"
+    #dataset_path = "./data/prepared_datasets/new_mb_45cm_04_03/train.tsv"
+    #dataset_path = "./data/prepared_datasets/new_mb_zoval_04_25/train.tsv"
+    dataset_path = "./data/prepared_datasets/06_09_final_off3cm_50cm/train.tsv"
 
 
 #rot = "quat"
@@ -79,17 +82,36 @@ bsp = BSpline(BSplineConstants.n, BSplineConstants.dim)
 loss_all2all = CableAll2AllLoss()
 loss = CablePtsLoss()
 
-# model = BasicNeuralPredictor()
+#model = BasicNeuralPredictor()
 # model = SeparatedCNNNeuralPredictor()
 model = SeparatedNeuralPredictor()
-# model = INBiLSTM()
+#model = INBiLSTM()
 # model = CNN()
+#model = Transformer(num_layers=2, num_heads=8, dff=256, d_model=64, dropout_rate=0.1, target_size=3)
+
 
 ckpt = tf.train.Checkpoint(model=model)
 #ckpt.restore("./trained_models/all_mb_03_27/new_mb_03_27_poc64_lr5em4_bs128_sep_nodiff_rotvec_cable_augwithzeros/last_n-293")
-ckpt.restore("./trained_models/all_mb_03_27/new_mb_03_27_poc64_lr5em4_bs128_sep_nodiff_rotmat_dcable_augwithzeros/checkpoints/best-127")
+#ckpt.restore("./trained_models/all_mb_03_27/new_mb_03_27_poc64_lr5em4_bs128_sep_nodiff_rotmat_dcable_augwithzeros/checkpoints/best-127")
 #ckpt.restore("./trained_models/all_mb_03_27/new_mb_03_27_poc64_lr5em4_bs128_sep_diff_rotmat_dcable_augwithzeros_/checkpoints/best-91")
+#ckpt.restore("./trained_models/all_mb_zoval_04_25/new_mb_zoval_04_25_poc64_lr5em4_bs128_sep_diff_rotvec_cable_augwithzeros/checkpoints/best-154")
+#ckpt.restore("./trained_models//new_mb_zoval_04_25_poc64_lr5em4_bs128_sep_diff_rotvec_cable_augwithzeros/checkpoints/best-154")
 
+# sep
+ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_sep_nodiff_rotmat_dcable_augwithzeros/checkpoints/best-41")
+#ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_sep_nodiff_rotmat_dcable_noaug/checkpoints/best-20")
+#ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_sep_diff_rotmat_dcable_noaug/checkpoints/best-45")
+#ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_sep_diff_rotmat_dcable_augwithzeros/checkpoints/best-58")
+# inbilstm
+#ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_inbilstm_nodiff_rotmat_dcable_augwithzeros/checkpoints/best-50")
+#ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_inbilstm_nodiff_rotmat_dcable_noaug/checkpoints/best-30")
+#ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_inbilstm_diff_rotmat_dcable_noaug/checkpoints/best-32")
+#ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_inbilstm_diff_rotmat_dcable_augwithzeros/checkpoints/best-31")
+# transformwer
+#ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_transformer_nodiff_rotmat_dcable_noaug/checkpoints/best-30")
+#ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_transformer_nodiff_rotmat_dcable_augwithzeros/checkpoints/best-24") # diff - to be retrained on nodiff
+#ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_transformer_diff_rotmat_dcable_augwithzeros/checkpoints/best-38")
+#ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_transformer_diff_rotmat_dcable_noaug/checkpoints/best-51")
 
 
 #ckpt.restore("./trained_models/all/xyzrpy_episodic_sep_all2all_02_23__01_00_cp16_bs128_lr5em4_sep_absloss_withened_quat_augwithzeros/checkpoints/last_n-70")
@@ -139,6 +161,8 @@ pts_losses_euc = []
 ratio_losses = []
 l12_losses = []
 l12ref = []
+L3_gtpreds = []
+L3_gtcables = []
 for i, rotation, translation, cable, y_gt in _ds('Train', dataset_epoch, ds_size, 0, args.batch_size):
     y_pred = inference(rotation, translation, cable)
     pts_loss_abs, pts_loss_euc, pts_loss_l2 = loss(y_gt, y_pred)
@@ -156,9 +180,14 @@ for i, rotation, translation, cable, y_gt in _ds('Train', dataset_epoch, ds_size
         #dtw_gtcable = dtw(y_gt[i], cable[i])
         L3_gtpred = calculateL3(y_gt[i].numpy().T, y_pred[i].numpy().T)
         L3_gtcable = calculateL3(y_gt[i].numpy().T, cable[i].numpy().T)
+        #if L3_gtcable < 0.02:
+        #    continue
+        L3_gtpreds.append(L3_gtpred)
+        L3_gtcables.append(L3_gtcable)
         a = 0
         ratio_loss = L3_gtpred / (L3_gtcable + 1e-8)
-        print("L3:", L3_gtpred)
+        print("L3 PRED:", L3_gtpred)
+        print("L3 DIFF:", L3_gtcable)
         print("RATIO:", ratio_loss)
         ratio_losses.append(ratio_loss)
 
@@ -185,6 +214,7 @@ for i, rotation, translation, cable, y_gt in _ds('Train', dataset_epoch, ds_size
         yh = 0.3
         zl = -0.3
         zh = 0.3
+        plt.clf()
         plt.subplot(221)
         plt.xlim(xl, xh)
         plt.ylim(yl, yh)
@@ -217,7 +247,8 @@ for i, rotation, translation, cable, y_gt in _ds('Train', dataset_epoch, ds_size
         # plt.xlim(-0.1, 0.7)
         # plt.ylim(-0.4, 0.4)
         plt.legend()
-        plt.show()
+        #plt.show()
+        plt.savefig(f"pred_imgs/{ratio_loss:.5f}.png")
         a = 0
 
     epoch_loss.append(model_loss)
@@ -228,6 +259,8 @@ for i, rotation, translation, cable, y_gt in _ds('Train', dataset_epoch, ds_size
     l12ref.append(l12_gtcable)
 
 ratio_losses = np.array(ratio_losses)
+L3_gtpreds = np.array(L3_gtpreds)
+L3_gtcables = np.array(L3_gtcables)
 l12_losses = np.concatenate(l12_losses, -1)
 l12ref = np.concatenate(l12ref, -1)
 
@@ -237,7 +270,10 @@ l12ref = np.concatenate(l12ref, -1)
 # plt.subplot(122)
 # plt.hist(diff_energies, bins=50)
 # plt.show()
+plt.subplot(121)
 plt.hist(ratio_losses, bins=50)
+plt.subplot(122)
+plt.scatter(L3_gtcables, L3_gtpreds)
 plt.show()
 
 epoch_loss = tf.reduce_mean(tf.concat(epoch_loss, -1))

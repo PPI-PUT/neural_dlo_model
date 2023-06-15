@@ -43,9 +43,25 @@ ds_name = "xyzrpy"
 #ds_type = "filtered_data"
 #ds_type = "filtered_data/val"
 #ds_type = "02_21_nominal_l50cm"
+#ds_type = "02_21_thin_l50cm"
+#ds_type = "02_21_thin_l50cm/train"
+#ds_type = "02_21_thin_l50cm/val"
+#ds_type = "02_21_thin_l50cm/test"
+#ds_type = "02_21_rigid_l50cm"
+#ds_type = "02_21_rigid_l50cm/val"
+#ds_type = "02_21_rigid_l50cm/train"
 #ds_type = "02_21_l40cm"
 #ds_type = "02_21_l45cm"
-ds_type = "l50cm_sep/val"
+#ds_type = "02_21_l45cm/train"
+#ds_type = "02_21_l45cm/val"
+#ds_type = "02_21_l45cm/test"
+#ds_type = "l50cm_sep/val"
+#ds_type = "l50cm_all_sep/val"
+#ds_type = "l50cm_all_sep/train"
+#ds_type = "l50cm_all_sep_03_01/test"
+#ds_type = "l50cm_all_sep_03_01/train"
+ds_type = "l50cm_all_sep_03_01/val"
+#ds_type = "02_24_nominal_l50cm_test"
 #ds_type = "l50cm_sep/train"
 N = 100
 # plots = True
@@ -61,7 +77,8 @@ params = yaml.load(stream, Loader=yaml.FullLoader)
 R_base2base = np.array([[-1., 0., 0.], [0., -1., 0.], [0., 0., 1.]])
 
 color = ['r', 'g', 'b', 'c', 'm', 'k']
-bsp = BSpline(BSplineConstants.n, BSplineConstants.dim)
+#bsp = BSpline(BSplineConstants.n, BSplineConstants.dim)
+bsp = BSpline(BSplineConstants.n, BSplineConstants.dim, num_T_pts=1021)
 
 for k, pkl in enumerate(sorted(glob(os.path.join(SCRIPT_DIR, ds_name, ds_type, "*.pkl")))):
     print(pkl)
@@ -143,7 +160,7 @@ for k, pkl in enumerate(sorted(glob(os.path.join(SCRIPT_DIR, ds_name, ds_type, "
         dxyz = np.diff(xyz_spline[:, :, 0], axis=0)
         length = np.sum(np.linalg.norm(dxyz, axis=-1))
         print("LENGTH:", length)
-        L = 0.4
+        L = 0.45
         if length < L:
             print("TOO SHORT:", length)
             continue
@@ -160,16 +177,22 @@ for k, pkl in enumerate(sorted(glob(os.path.join(SCRIPT_DIR, ds_name, ds_type, "
         if dist_from_right_tcp[-1] < dist_from_right_tcp[0]:
             print("REVERSE")
             xyz_spline_control_pts_in_right_tcp_norot = xyz_spline_control_pts_in_right_tcp_norot[::-1]
+
+        xyz_bsp = bsp.N[0] @ xyz_spline_control_pts_in_right_tcp_norot[..., 0]
+        length = np.sum(np.linalg.norm(np.diff(xyz_bsp, axis=0), axis=-1))
+        skip = 68
         states.append(np.concatenate([R_left_flange_in_base.reshape(-1), R_right_flange_in_base.reshape(-1),
                                       xyz_left_tcp_in_right_tcp_norot[:, 0],
                                       # xyz_spline_in_right_tcp_norot[::10].reshape(-1)
                                       #xyz_spline_in_right_tcp_norot.reshape(-1)
-                                      xyz_spline_control_pts_in_right_tcp_norot.reshape(-1)
+                                      #xyz_bsp[::skip].reshape(-1),
+                                      xyz_spline_control_pts_in_right_tcp_norot.reshape(-1),
+                                      np.array([length])
                                       ], axis=0))
 
         # xyz_spline_in_right_flange = R_right_base_in_flange @ xyz_spline_in_right_base + t_right_base_in_flange
         # xyz_spline_in_right_tcp = R_right_flange_in_tcp @ xyz_spline_in_right_flange + t_right_flange_in_tcp
-        xyz_bsp = bsp.N[0] @ xyz_spline_control_pts_in_right_tcp_norot[..., 0]
+        #xyz_bsp = bsp.N[0] @ xyz_spline_control_pts_in_right_tcp_norot[..., 0]
 
         if plots:
             plt.subplot(231)
@@ -208,10 +231,11 @@ for k, pkl in enumerate(sorted(glob(os.path.join(SCRIPT_DIR, ds_name, ds_type, "
         #k += 1
         #plt.show()
 
+    print(pkl)
     #plt.show()
-    states = np.stack(states, axis=0)
-    if states.shape[0] < 2:
+    if len(states) < 2:
         continue
+    states = np.stack(states, axis=0)
     c = np.array(list(combinations(range(states.shape[0]), 2)))
     neural_dlo_model_dataset.append(np.concatenate([states[c[:, 0]], states[c[:, 1]]], axis=-1))
     neural_dlo_model_dataset.append(np.concatenate([states[c[:, 1]], states[c[:, 0]]], axis=-1))
@@ -242,10 +266,12 @@ for i, el in enumerate(neural_dlo_model_dataset):
     R_r_0 = el[9:18].reshape((3, 3))
     xyz_l_0 = el[18:21]
     cp_0 = el[21:21 + ncp]
-    R_l_1 = el[21 + ncp:30 + ncp].reshape((3, 3))
-    R_r_1 = el[30 + ncp:39 + ncp].reshape((3, 3))
-    xyz_l_1 = el[39 + ncp:42 + ncp]
-    cp_1 = el[42 + ncp:42 + 2 * ncp]
+    len0 = el[21 + ncp: 22 + ncp]
+    R_l_1 = el[22 + ncp:31 + ncp].reshape((3, 3))
+    R_r_1 = el[31 + ncp:40 + ncp].reshape((3, 3))
+    xyz_l_1 = el[40 + ncp:43 + ncp]
+    cp_1 = el[43 + ncp:43 + 2 * ncp]
+    len1 = el[43 + 2 * ncp:44 + 2 * ncp]
     dRl = np.linalg.norm(R_l_1 - R_l_0)
     dRr = np.linalg.norm(R_r_1 - R_r_0)
     dxyzl = np.linalg.norm(xyz_l_1 - xyz_l_0)
@@ -253,10 +279,12 @@ for i, el in enumerate(neural_dlo_model_dataset):
     dcp = np.linalg.norm(dcp_)
     cp_0_ = np.reshape(cp_0, (BSplineConstants.n, BSplineConstants.dim))
     cp_1_ = np.reshape(cp_1, (BSplineConstants.n, BSplineConstants.dim))
-    len0 = np.sum(np.linalg.norm(np.diff(cp_0_, axis=0), axis=-1))
-    len1 = np.sum(np.linalg.norm(np.diff(cp_1_, axis=0), axis=-1))
+    #len0 = np.sum(np.linalg.norm(np.diff(cp_0_, axis=0), axis=-1))
+    #len1 = np.sum(np.linalg.norm(np.diff(cp_1_, axis=0), axis=-1))
     dlen = np.abs(len1 - len0)
-    if (dRl > 1e-2 or dRr > 1e-2 or dxyzl > 1e-3) and dcp > 0.01 and np.abs(len1 - len0) < 0.02:# and dxyzl > 0.05:
+    if (dRl > 1e-2 or dRr > 1e-2 or dxyzl > 1e-3) and dcp > 0.01 and np.abs(len1 - len0) < 0.01:# and dxyzl > 0.05:
+    #if (dRl > 1e-2 or dRr > 1e-2 or dxyzl > 1e-3) and dcp > 0.01 and np.abs(len1 - len0) < 0.02:# and dxyzl > 0.05:
+        el = np.concatenate([el[:21 + ncp], el[22+ncp:-1]], axis=-1)
         neural_dlo_model_dataset_filtered.append(el)
     else:
         print("error")

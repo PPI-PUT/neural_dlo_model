@@ -31,21 +31,23 @@ np.random.seed(444)
 #path = f"./trained_models/all_mb_03_27/new_mb_03_27_poc64_lr5em4_bs128_sep_diff_rotvec_cable_augwithzeros/checkpoints"
 #path = f"./trained_models/all_mb_03_27/new_mb_03_27_poc64_lr5em4_bs128_sep_nodiff_rotmat_dcable_noaug/checkpoints"
 #path = f"./trained_models/all_mb_03_27/new_mb_03_27_poc64_lr5em4_bs128_sep_nodiff_rotmat_dcable_augwithzeros/checkpoints"
-path = f"./trained_models/all_mb_03_27/new_mb_03_27_poc64_lr5em4_bs128_inbilstm_nodiff_rotvec_cable_noaug/checkpoints"
+#path = f"./trained_models/all_mb_03_27/new_mb_03_27_poc64_lr5em4_bs128_inbilstm_nodiff_rotvec_cable_noaug/checkpoints"
 #path = f"./trained_models/all_mb_03_27/new_mb_03_27_poc64_lr5em4_bs128_inbilstm_nodiff_rotvec_cable_augwithzeros/checkpoints"
+path = f"./trained_models/all_mb_zoval_04_25/new_mb_zoval_04_25_poc64_lr5em4_bs128_sep_nodiff_rotmat_dcable_augwithzeros/checkpoints"
 name = path.split("/")[-2]
 name_fields = name.split("_")
 
-m = name_fields[7]
-d = name_fields[8]
-q = name_fields[9]
-c = name_fields[10]
-a = name_fields[11]
+m = name_fields[-5]
+d = name_fields[-4]
+q = name_fields[-3]
+c = name_fields[-2]
+a = name_fields[-1]
 
 class args:
     batch_size = 128
     working_dir = './trainings'
-    dataset_path = f"./data/prepared_datasets/new_mb_03_27_poc64/train.tsv"
+    #dataset_path = f"./data/prepared_datasets/new_mb_03_27_poc64/train.tsv"
+    dataset_path = f"./data/prepared_datasets/new_mb_zoval_04_25/train.tsv"
 
 
 train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=q, diff=(d == "diff"), augment=(a == "augwithzeros"))
@@ -143,4 +145,5 @@ results = {
 }
 
 #np.save(f"results/all_mb_03_27/{name}.npy", results)
-np.save(f"results/percent_mb_03_27/{name}_00percentofdata.npy", results)
+os.makedirs("results/all_mb_zoval_04_25/", exist_ok=True)
+np.save(f"results/all_mb_zoval_04_25/{name}.npy", results)

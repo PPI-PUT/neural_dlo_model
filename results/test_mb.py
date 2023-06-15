@@ -32,8 +32,8 @@ np.random.seed(444)
 # config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 #mod = ["sep", "inbilstm"]
-#mod = ["sep"]
-mod = ["inbilstm"]
+mod = ["sep"]
+#mod = ["inbilstm"]
 qr = ["quat", "rotmat", "rotvec"]
 diff = ["nodiff", "diff"]
 aug = ["noaug", "augwithzeros"]
@@ -49,7 +49,8 @@ for m, q, c, d, a in product(mod, qr, cab, diff, aug):
     class args:
         batch_size = 128
         working_dir = '../trainings'
-        dataset_path = f"../data/prepared_datasets/new_mb_03_27_poc64/train.tsv"
+        #dataset_path = f"../data/prepared_datasets/new_mb_03_27_poc64/train.tsv"
+        dataset_path = f"../data/prepared_datasets/new_mb_zoval_04_25/train.tsv"
 
 
     train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=q, diff=(d == "diff"), augment=(a == "augwithzeros"))
@@ -75,8 +76,10 @@ for m, q, c, d, a in product(mod, qr, cab, diff, aug):
         assert False
 
     ckpt = tf.train.Checkpoint(model=model)
-    name = f"new_mb_03_27_poc64_lr5em4_bs128_{m}_{d}_{q}_{c}_{a}"
-    dirname = "all_mb_03_27"
+    #name = f"new_mb_03_27_poc64_lr5em4_bs128_{m}_{d}_{q}_{c}_{a}"
+    #dirname = "all_mb_03_27"
+    name = f"new_mb_zoval_04_25_poc64_lr5em4_bs128_{m}_{d}_{q}_{c}_{a}"
+    dirname = "all_mb_zoval_04_25"
     path = f"../trained_models/{dirname}/{name}/checkpoints"
     print(path)
     best_list = list(glob(os.path.join(path, "best-*.index")))
@@ -106,6 +109,7 @@ for m, q, c, d, a in product(mod, qr, cab, diff, aug):
     pts_losses_abs = []
     pts_losses_euc = []
     ratio_losses = []
+    L3_losses = []
     for i, rotation, translation, cable, y_gt in _ds('Train', dataset_epoch, ds_size, 0, args.batch_size):
         y_pred = inference(rotation, translation, cable)
         pts_loss_abs, pts_loss_euc, pts_loss_l2 = loss(y_gt, y_pred)
@@ -122,6 +126,7 @@ for m, q, c, d, a in product(mod, qr, cab, diff, aug):
             print("L3:", L3_gtpred)
             print("RATIO:", ratio_loss)
             ratio_losses.append(ratio_loss)
+            L3_losses.append(L3_gtpred)
 
         pts_losses_abs.append(pts_loss_abs)
         pts_losses_euc.append(pts_loss_euc)
@@ -129,6 +134,7 @@ for m, q, c, d, a in product(mod, qr, cab, diff, aug):
     pts_loss_abs = tf.concat(pts_losses_abs, -1).numpy()
     pts_loss_euc = tf.concat(pts_losses_euc, -1).numpy()
     ratio_losses = np.array(ratio_losses)
+    L3_losses = np.array(L3_losses)
 
     #results[m + "_" + q + "_" + c + "_" + d + "_" + a] = {
     results = {
@@ -136,6 +142,7 @@ for m, q, c, d, a in product(mod, qr, cab, diff, aug):
         #"mean_pts_loss_abs": mean_pts_losses_abs, "std_pts_loss_abs": std_pts_losses_abs,
         #"mean_pts_loss_euc": mean_pts_losses_euc, "std_pts_loss_euc": std_pts_losses_euc,
         "ratio_loss": ratio_losses,
+        "L3_loss": L3_losses,
         "pts_loss_abs": pts_losses_abs,
         "pts_loss_euc": pts_losses_euc,
     }

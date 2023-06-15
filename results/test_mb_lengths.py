@@ -43,10 +43,11 @@ c = "dcable"
 class args:
     batch_size = 128
     working_dir = '../trainings'
-    dataset_path = f"../data/prepared_datasets/new_mb_45cm_04_03/train.tsv"
+    dataset_path = f"../data/prepared_datasets/new_mb_40cm_04_03/train.tsv"
 
 
-for path in glob(f"../trained_models/lengths2_mb_03_04/new_mb_*"):
+#for path in glob(f"../trained_models/lengths2_mb_03_04/new_mb_*100percent40cm_04_03_poc64_lr5em4_bs128_sep_nodiff_rotmat_dcable_augwithzeros"):
+for path in glob(f"../trained_models/lengths2_mb_03_04/new_mb_03_27_for40cm_poc64_lr5em4_bs128_sep_nodiff_rotmat_dcable_augwithzeros*"):
     name = path.split("/")[-1]
 
     augument = "augwithzeros" in path

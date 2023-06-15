@@ -21,10 +21,18 @@ def boxplot(data, field):
     #baseline = [data[2]]
     #nopretrain = [data[1], data[0]] + data[3:5]
     #pretrain = [data[6], data[5]] + data[7:9]
-    baseline = [data[1]]
-    nopretrain = [data[0], data[4], data[3], data[2]]
-    pretrain = [data[5], data[8], data[7], data[6]]
-    def bp(v, positions, c):
+    #baseline = [data[1]]
+    #nopretrain = [data[0], data[4], data[3], data[2]]
+    #pretrain = [data[5], data[8], data[7], data[6]]
+
+    baseline40 = [data[2]]
+    baseline45 = [data[3]]
+    nopretrain40 = [data[i] for i in [0, 8, 6, 4]]
+    nopretrain45 = [data[i] for i in [1, 9, 7, 5]]
+    pretrain40 = [data[i] for i in [10, 16, 14, 12]]
+    pretrain45 = [data[i] for i in [11, 17, 15, 13]]
+
+    def bp(v, positions, c, ws="-"):
         bp = plt.boxplot(v, positions=positions,
                         showmeans=True, showfliers=False,
                         # patch_artist=True, notch=True,
@@ -33,7 +41,7 @@ def boxplot(data, field):
                         boxprops=dict(linewidth=2),
                         whiskerprops=dict(linewidth=2),
                         capprops=dict(linewidth=2),
-                        widths=0.25)
+                        widths=0.15)
         # bp = ax.boxplot(collection[i], positions=[0, spacing])
         ci = 0
         for i in range(len(bp["boxes"])):
@@ -43,11 +51,16 @@ def boxplot(data, field):
             # bp["fliers"][i].set_color(c)
             bp["whiskers"][2 * i].set_color(c)
             bp["whiskers"][2 * i + 1].set_color(c)
+            bp["whiskers"][2 * i].set_linestyle(ws)
+            bp["whiskers"][2 * i + 1].set_linestyle(ws)
             bp["caps"][2 * i].set_color(c)
             bp["caps"][2 * i + 1].set_color(c)
-    bp(baseline, [-0.2], "tab:green")
-    bp(nopretrain, np.linspace(0.5, 3.5, 4), "tab:orange")
-    bp(pretrain, np.linspace(0.8, 3.8, 4), "tab:green")
+    bp(baseline40, [-0.4], "tab:blue", ws="--")
+    bp(baseline45, [-0.2], "tab:orange", ws="--")
+    bp(nopretrain40, np.linspace(0.3, 3.5, 4), "tab:blue")
+    bp(pretrain40, np.linspace(0.5, 3.7, 4), "tab:blue", ws="--")
+    bp(nopretrain45, np.linspace(0.7, 3.9, 4), "tab:orange")
+    bp(pretrain45, np.linspace(0.9, 4.1, 4), "tab:orange", ws="--")
     ax = plt.gca()
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
@@ -58,14 +71,17 @@ def boxplot(data, field):
     plt.subplots_adjust(bottom=0.2)
 
     custom_lines = [
-        Line2D([0], [0], color="tab:green", lw=2),
+        Line2D([0], [0], color="tab:blue", lw=2),
         Line2D([0], [0], color="tab:orange", lw=2),
+        Line2D([0], [0], color="black", lw=2, linestyle="-"),
+        Line2D([0], [0], color="black", lw=2, linestyle="--"),
     ]
-    ax.legend(custom_lines, ["pretrained", 'not pretrained'])
-              #bbox_to_anchor=(1.0, 0.0), frameon=False, ncol=4)
+    ax.legend(custom_lines, ["40cm", "45cm", "not pretrained", "pretrained"])
+    cpx_map, cpy_map = xy_to_local_map(cp[:, 0], cp[:, 1])
+    #bbox_to_anchor=(1.0, 0.0), frameon=False, ncol=4)
 
     #ax.set_xticks([])
-    positions = [-0.2] + np.linspace(0.65, 3.65, 4).tolist()
+    positions = [-0.3] + np.linspace(0.65, 3.8, 4).tolist()
     names = [str(x) for x in [0, 0.1, 1, 10, 100]]
     ax.set_xticks(positions)
     ax.set_xticklabels(names)

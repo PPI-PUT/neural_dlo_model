@@ -9,6 +9,7 @@ from models.cnn import CNN
 from models.inbilstm import INBiLSTM
 from models.separated_cnn_neural_predictor import SeparatedCNNNeuralPredictor
 from models.separated_neural_predictor import SeparatedNeuralPredictor
+from models.transformer import Transformer
 from utils.bspline import BSpline
 from utils.constants import BSplineConstants
 from utils.geometry import calculateL3
@@ -67,6 +68,8 @@ elif m == "cnn":
     model = CNN()
 elif m == "inbilstm":
     model = INBiLSTM()
+elif m == "transformer":
+    model = Transformer(num_layers=2, num_heads=8, dff=256, d_model=64, dropout_rate=0.1, target_size=3)
 else:
     print("WRONG MODEL NAME")
     assert False

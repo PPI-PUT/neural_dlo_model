@@ -66,8 +66,8 @@ class CNN(tf.keras.Model):
         #transrot = tf.tile(transrot[:, tf.newaxis], (1, BSplineConstants.n, 1))
 
         intermediate = []
-        dcable = cable[:, 1:] - cable[:, :-1]
-        cable = tf.concat([dcable, tf.zeros_like(dcable[:, :1])], axis=1)
+        #dcable = cable[:, 1:] - cable[:, :-1]
+        #cable = tf.concat([dcable, tf.zeros_like(dcable[:, :1])], axis=1)
         for l in self.cable_down:
             cable = l(cable, training=training)
             intermediate.append(copy(cable))

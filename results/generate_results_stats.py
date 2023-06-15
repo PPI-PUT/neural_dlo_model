@@ -11,8 +11,11 @@ import numpy as np
 from matplotlib.lines import Line2D
 
 data = {}
-prefix = "new_mb_03_27_poc64_lr5em4_bs128"
-for r in glob(f"all_mb_03_27/{prefix}*.npy"):
+#results_dir = "all_mb_03_27"
+results_dir = "all_mb_zoval_04_25"
+#prefix = "new_mb_03_27_poc64_lr5em4_bs128"
+prefix = f"new_mb_zoval_04_25_poc64_lr5em4_bs128"
+for r in glob(f"{results_dir}/{prefix}*.npy"):
     d = np.load(r, allow_pickle=True)[()]
     name = r.split("/")[-1][len(prefix)+1:-4]
     data[name] = d
@@ -29,10 +32,9 @@ def get_minimum(data, field):
     return min_name, min_value
 
 
-def boxplot_noaug(data, field):
+def boxplot(data, field, aug):
     keys = sorted(data.keys())
-    aug = "augwithzeros"
-    #aug = "noaug"
+    aug = "augwithzeros" if aug else "noaug"
     keys = [k for k in keys if aug in k]
     v = [data[k][field] * 100. for k in keys]
     names = []
@@ -161,7 +163,8 @@ def row_noaug(data, method, metric):
 
 #sd = sort(data, "mean_pts_loss_euc")
 sd = sort(data, "ratio_loss")
-boxplot_noaug(data, "ratio_loss")
+boxplot(data, "ratio_loss", False)
+boxplot(data, "ratio_loss", True)
 print(sd)
 print(row_noaug(data, "sep", "ratio_loss"))
 #print(row_noaug(data, "sep", "pts_loss_euc"))
