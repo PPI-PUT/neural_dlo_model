@@ -6,6 +6,7 @@ from losses.cable_pts import CablePtsLoss
 from models.cnn import CNN
 from models.cnn_sep import CNNSep
 from models.inbilstm import INBiLSTM
+from models.jacobian_neural_predictor import JacobianNeuralPredictor
 from models.scale_neural_predictor import ScaleNeuralPredictor, ScaleNeuralPredictor1, ScaleNeuralPredictor2
 from models.separated_cnn_neural_predictor import SeparatedCNNNeuralPredictor
 from models.separated_neural_predictor import SeparatedNeuralPredictor
@@ -95,7 +96,8 @@ loss = CablePtsLoss()
 #model = INBiLSTM()
 # model = CNN()
 # model = CNNSep()
-model = Transformer(num_layers=2, num_heads=8, dff=256, d_model=64, dropout_rate=0.1, target_size=3)
+#model = Transformer(num_layers=2, num_heads=8, dff=256, d_model=64, dropout_rate=0.1, target_size=3)
+model = JacobianNeuralPredictor(rot, diff)
 
 experiment_handler = ExperimentHandler(args.working_dir, args.out_name, args.log_interval, model, opt)
 
