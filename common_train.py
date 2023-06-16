@@ -33,8 +33,7 @@ np.random.seed(444)
 # config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 class args:
-    #batch_size = 128
-    batch_size = 1
+    batch_size = 128
     # batch_size = 64
     # batch_size = 32
     working_dir = './trainings'
@@ -133,11 +132,11 @@ for epoch in range(30000):
     times = []
     for i, rotation, translation, cable, y_gt in _ds('Train', dataset_epoch, train_size, epoch, args.batch_size):
         with tf.GradientTape(persistent=True) as tape:
-            t0 = perf_counter()
+            #t0 = perf_counter()
             y_pred = inference(rotation, translation, cable)
-            t1 = perf_counter()
-            times.append(t1 - t0)
-            print(t1 - t0)
+            #t1 = perf_counter()
+            #times.append(t1 - t0)
+            #print(t1 - t0)
             pts_loss_abs, pts_loss_euc, pts_loss_l2 = loss(y_gt, y_pred)
             prediction_loss = pts_loss_abs
 
@@ -161,9 +160,9 @@ for epoch in range(30000):
             tf.summary.scalar('metrics/pts_loss_l2', tf.reduce_mean(pts_loss_l2), step=train_step)
             tf.summary.scalar('metrics/reg_loss', tf.reduce_mean(reg_loss), step=train_step)
         train_step += 1
-    print(times)
-    print(np.mean(times))
-    assert False
+    #print(times)
+    #print(np.mean(times))
+    #assert False
 
     epoch_loss = tf.reduce_mean(tf.concat(epoch_loss, -1))
     prediction_losses = tf.reduce_mean(tf.concat(prediction_losses, -1))
