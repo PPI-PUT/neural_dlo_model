@@ -230,8 +230,8 @@ def prepare_dataset_cond(path, rot, n=0, diff=False, augment=False):
                                  R.from_matrix(R_r_0).as_rotvec(), R.from_matrix(diff_R_r).as_rotvec(),
                                  ], axis=-1).astype(np.float32)
         elif rot == "euler":
-            X1 = np.concatenate([R.from_matrix(R_l_0).as_euler(), R.from_matrix(diff_R_l).as_euler(),
-                                 R.from_matrix(R_r_0).as_euler(), R.from_matrix(diff_R_r).as_euler(),
+            X1 = np.concatenate([R.from_matrix(R_l_0).as_euler("xyz"), R.from_matrix(diff_R_l).as_euler("xyz"),
+                                 R.from_matrix(R_r_0).as_euler("xyz"), R.from_matrix(diff_R_r).as_euler("xyz"),
                                  ], axis=-1).astype(np.float32)
         X2 = np.concatenate([xyz_l_0 * mul,
                              (xyz_l_1 - xyz_l_0) * mul,
@@ -250,8 +250,8 @@ def prepare_dataset_cond(path, rot, n=0, diff=False, augment=False):
                                  R.from_matrix(R_r_0).as_rotvec(), R.from_matrix(R_r_1).as_rotvec(),
                                  ], axis=-1).astype(np.float32)
         elif rot == "euler":
-            X1 = np.concatenate([R.from_matrix(R_l_0).as_euler(), R.from_matrix(R_l_1).as_euler(),
-                                 R.from_matrix(R_r_0).as_euler(), R.from_matrix(R_r_1).as_euler(),
+            X1 = np.concatenate([R.from_matrix(R_l_0).as_euler("xyz"), R.from_matrix(R_l_1).as_euler("xyz"),
+                                 R.from_matrix(R_r_0).as_euler("xyz"), R.from_matrix(R_r_1).as_euler("xyz"),
                                  ], axis=-1).astype(np.float32)
         X2 = np.concatenate([xyz_l_0 * mul,
                              xyz_l_1 * mul,
@@ -278,8 +278,8 @@ def prepare_dataset_cond(path, rot, n=0, diff=False, augment=False):
                                         R.from_matrix(R_r_0).as_rotvec(), R.from_matrix(identity).as_rotvec(),
                                         ], axis=-1).astype(np.float32)
             elif rot == "euler":
-                X1aug = np.concatenate([R.from_matrix(R_l_0).as_euler(), R.from_matrix(identity).as_euler(),
-                                        R.from_matrix(R_r_0).as_euler(), R.from_matrix(identity).as_euler(),
+                X1aug = np.concatenate([R.from_matrix(R_l_0).as_euler("xyz"), R.from_matrix(identity).as_euler("xyz"),
+                                        R.from_matrix(R_r_0).as_euler("xyz"), R.from_matrix(identity).as_euler("xyz"),
                                         ], axis=-1).astype(np.float32)
             X2aug = np.concatenate([xyz_l_0 * mul,
                                     np.zeros_like(xyz_l_1) * mul,
@@ -298,8 +298,8 @@ def prepare_dataset_cond(path, rot, n=0, diff=False, augment=False):
                                         R.from_matrix(R_r_0).as_rotvec(), R.from_matrix(R_r_0).as_rotvec(),
                                         ], axis=-1).astype(np.float32)
             elif rot == "euler":
-                X1aug = np.concatenate([R.from_matrix(R_l_0).as_euler(), R.from_matrix(R_l_0).as_euler(),
-                                        R.from_matrix(R_r_0).as_euler(), R.from_matrix(R_r_0).as_euler(),
+                X1aug = np.concatenate([R.from_matrix(R_l_0).as_euler("xyz"), R.from_matrix(R_l_0).as_euler("xyz"),
+                                        R.from_matrix(R_r_0).as_euler("xyz"), R.from_matrix(R_r_0).as_euler("xyz"),
                                         ], axis=-1).astype(np.float32)
             X2aug = np.concatenate([xyz_l_0 * mul,
                                     xyz_l_0 * mul,
