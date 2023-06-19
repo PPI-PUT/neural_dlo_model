@@ -48,8 +48,10 @@ class JacobianNeuralPredictor(tf.keras.Model):
         ]
 
     def __call__(self, rotation, translation, cable, true_rotation, true_translation, training=False):
-        rot = tf.concat(rotation, axis=-1)
-        trans = tf.concat(translation, axis=-1)
+        #rot = tf.concat(rotation, axis=-1)
+        #trans = tf.concat(translation, axis=-1)
+        rot = tf.concat([rotation[0], rotation[2]], axis=-1)
+        trans = translation[0]
         for l in self.rot:
             rot = l(rot, training=training)
         for l in self.trans:
