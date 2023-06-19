@@ -30,6 +30,8 @@ class JacobianNeuralPredictor(tf.keras.Model):
             rot_dim = 4
         elif rotation == "rotvec":
             rot_dim = 3
+        elif rotation == "euler":
+            rot_dim = 3
         elif rotation == "rotmat":
             rot_dim = 9
 
