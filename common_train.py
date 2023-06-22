@@ -6,7 +6,7 @@ from losses.cable_pts import CablePtsLoss
 from models.cnn import CNN
 from models.cnn_sep import CNNSep
 from models.inbilstm import INBiLSTM
-from models.jacobian_neural_predictor import JacobianNeuralPredictor
+from models.jacobian_neural_predictor import JacobianNeuralPredictor, JacobianRBFN
 from models.scale_neural_predictor import ScaleNeuralPredictor, ScaleNeuralPredictor1, ScaleNeuralPredictor2
 from models.separated_cnn_neural_predictor import SeparatedCNNNeuralPredictor
 from models.separated_neural_predictor import SeparatedNeuralPredictor
@@ -96,7 +96,22 @@ loss = CablePtsLoss()
 # model = CNN()
 # model = CNNSep()
 #model = Transformer(num_layers=2, num_heads=8, dff=256, d_model=64, dropout_rate=0.1, target_size=3)
-model = JacobianNeuralPredictor(rot, diff)
+#model = JacobianNeuralPredictor(rot, diff)
+
+
+features = []
+for data in train_ds:
+    rotation_, translation_, cable_ = whitening(data["x1"], data["x2"], data["x3"], ds_stats)
+    R_l_0, R_l_1, R_r_0, R_r_1 = unpack_rotation(rotation_)
+    t_l_0, t_l_1 = unpack_translation(translation_)
+    cable_, dcable_ = unpack_cable(cable_)
+    cab = dcable_ if ifdcable else cable_
+    cab = np.reshape(cab, (cab.shape[0], -1))
+    f = np.concatenate([R_l_0, R_r_0, t_l_0, cab], axis=-1)
+    features.append(f)
+features = np.concatenate(features, 0)
+
+model = JacobianRBFN(rot, diff, features)
 
 experiment_handler = ExperimentHandler(args.working_dir, args.out_name, args.log_interval, model, opt)
 
