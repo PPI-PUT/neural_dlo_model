@@ -1,5 +1,6 @@
 import tensorflow as tf
 from sklearn.cluster import KMeans
+from tensorflow_graphics.geometry.transformation import euler
 
 from utils.constants import BSplineConstants
 import numpy as np
@@ -101,7 +102,8 @@ class JacobianRBFN(tf.keras.Model):
         trans_dim = 3
         rot_dim = 0
         if rotation == "quat":
-            rot_dim = 4
+            #rot_dim = 4
+            rot_dim = 3
         elif rotation == "rotvec":
             rot_dim = 3
         elif rotation == "euler":
@@ -131,10 +133,16 @@ class JacobianRBFN(tf.keras.Model):
         J = tf.reshape(J, (-1, BSplineConstants.n, BSplineConstants.dim, self.action_dim))
 
         if self.diff:
-            action = tf.concat([true_rotation[1], true_rotation[3], true_translation[1]], axis=-1)
+            rl = euler.from_quaternion(true_rotation[1])
+            rr = euler.from_quaternion(true_rotation[3])
+            action = tf.concat([rl, rr, true_translation[1]], axis=-1)
+            #action = tf.concat([true_rotation[1], true_rotation[3], true_translation[1]], axis=-1)
         else:
-            action = tf.concat([true_rotation[1] - true_rotation[0],
-                                true_rotation[3] - true_rotation[2],
-                                true_translation[1] - true_translation[0]], axis=-1)
+            rl = euler.from_quaternion(true_rotation[1]) - euler.from_quaternion(true_rotation[0])
+            rr = euler.from_quaternion(true_rotation[3]) - euler.from_quaternion(true_rotation[2])
+            action = tf.concat([rl, rr, true_translation[1] - true_translation[0]], axis=-1)
+            #action = tf.concat([true_rotation[1] - true_rotation[0],
+            #                    true_rotation[3] - true_rotation[2],
+            #                    true_translation[1] - true_translation[0]], axis=-1)
         x = (J @ action[:, tf.newaxis, :, tf.newaxis])[..., 0]
         return x
