@@ -322,8 +322,153 @@ def prepare_dataset_cond(path, rot, n=0, diff=False, augment=False):
 
     ds_size = data.shape[0]
     ds = tf.data.Dataset.from_tensor_slices({"x1": X1, "x2": X2, "x3": X3, "y": Y})
-    return ds, ds_size, X1, X2, X3, Y
+    return ds, ds_size, X1, X2, X3, Y#, data
 
+
+
+def prepare_dataset_cond_lennorm(path, rot, n=0, diff=False, augment=False):
+    assert rot in ["quat", "rotmat", "rotvec", "euler"]
+    data = np.loadtxt(path, delimiter='\t').astype(np.float32)
+    if n > 0:
+        idx = np.random.randint(0, data.shape[0] - 1, n)
+        data = data[idx]
+    ncp = BSplineConstants.ncp
+    R_l_0 = data[:, :9].reshape((-1, 3, 3))
+    R_r_0 = data[:, 9:18].reshape((-1, 3, 3))
+    xyz_l_0 = data[:, 18:21]
+    cp_0 = data[:, 21:21 + ncp].reshape((-1, BSplineConstants.n, BSplineConstants.dim))
+    R_l_1 = data[:, 21 + ncp:30 + ncp].reshape((-1, 3, 3))
+    R_r_1 = data[:, 30 + ncp:39 + ncp].reshape((-1, 3, 3))
+    xyz_l_1 = data[:, 39 + ncp:42 + ncp]
+    cp_1 = data[:, 42 + ncp:42 + 2 * ncp].reshape((-1, BSplineConstants.n, BSplineConstants.dim))
+    diff_R_l = np.transpose(R_l_0, (0, 2, 1)) @ R_l_1
+    diff_R_r = np.transpose(R_r_0, (0, 2, 1)) @ R_r_1
+    mul = 1.
+
+    c0_len = np.sum(np.linalg.norm(cp_0[:, 1:] - cp_0[:, :-1], axis=-1), axis=-1)
+    c1_len = np.sum(np.linalg.norm(cp_1[:, 1:] - cp_1[:, :-1], axis=-1), axis=-1)
+    #plt.subplot(131)
+    #plt.hist(c0_len, bins=25)
+    #plt.subplot(132)
+    #plt.hist(c1_len, bins=25)
+    #plt.subplot(133)
+    #plt.hist(c0_len - c1_len, bins=25)
+    #plt.show()
+    #c_len = (c0_len + c1_len) / 2.
+
+    # normalize translations by length
+    xyz_l_0 = xyz_l_0 / c0_len[:, np.newaxis]
+    xyz_l_1 = xyz_l_1 / c1_len[:, np.newaxis]
+    cp_0 = cp_0 / c0_len[:, np.newaxis, np.newaxis]
+    cp_1 = cp_1 / c0_len[:, np.newaxis, np.newaxis]
+
+    if diff:
+        if rot == "quat":
+            X1 = np.concatenate([R.from_matrix(R_l_0).as_quat(), R.from_matrix(diff_R_l).as_quat(),
+                                 R.from_matrix(R_r_0).as_quat(), R.from_matrix(diff_R_r).as_quat(),
+                                 ], axis=-1).astype(np.float32)
+        elif rot == "rotmat":
+            X1 = np.concatenate([R_l_0.reshape((-1, 9)), diff_R_l.reshape((-1, 9)),
+                                 R_r_0.reshape((-1, 9)), diff_R_r.reshape((-1, 9)),
+                                 ], axis=-1)
+        elif rot == "rotvec":
+            X1 = np.concatenate([R.from_matrix(R_l_0).as_rotvec(), R.from_matrix(diff_R_l).as_rotvec(),
+                                 R.from_matrix(R_r_0).as_rotvec(), R.from_matrix(diff_R_r).as_rotvec(),
+                                 ], axis=-1).astype(np.float32)
+        elif rot == "euler":
+            X1 = np.concatenate([R.from_matrix(R_l_0).as_euler("xyz"), R.from_matrix(diff_R_l).as_euler("xyz"),
+                                 R.from_matrix(R_r_0).as_euler("xyz"), R.from_matrix(diff_R_r).as_euler("xyz"),
+                                 ], axis=-1).astype(np.float32)
+        X2 = np.concatenate([xyz_l_0 * mul,
+                             (xyz_l_1 - xyz_l_0) * mul,
+                             ], axis=-1)
+    else:
+        if rot == "quat":
+            X1 = np.concatenate([R.from_matrix(R_l_0).as_quat(), R.from_matrix(R_l_1).as_quat(),
+                                 R.from_matrix(R_r_0).as_quat(), R.from_matrix(R_r_1).as_quat(),
+                                 ], axis=-1).astype(np.float32)
+        elif rot == "rotmat":
+            X1 = np.concatenate([R_l_0.reshape((-1, 9)), R_l_1.reshape((-1, 9)),
+                                 R_r_0.reshape((-1, 9)), R_r_1.reshape((-1, 9)),
+                                 ], axis=-1)
+        elif rot == "rotvec":
+            X1 = np.concatenate([R.from_matrix(R_l_0).as_rotvec(), R.from_matrix(R_l_1).as_rotvec(),
+                                 R.from_matrix(R_r_0).as_rotvec(), R.from_matrix(R_r_1).as_rotvec(),
+                                 ], axis=-1).astype(np.float32)
+        elif rot == "euler":
+            X1 = np.concatenate([R.from_matrix(R_l_0).as_euler("xyz"), R.from_matrix(R_l_1).as_euler("xyz"),
+                                 R.from_matrix(R_r_0).as_euler("xyz"), R.from_matrix(R_r_1).as_euler("xyz"),
+                                 ], axis=-1).astype(np.float32)
+        X2 = np.concatenate([xyz_l_0 * mul,
+                             xyz_l_1 * mul,
+                             ], axis=-1).astype(np.float32)
+    X3 = cp_0.astype(np.float32) * mul
+    X3d = np.concatenate([X3[:, :1], np.diff(X3, axis=1)], axis=1)
+    X3 = np.concatenate([X3, X3d], axis=-1)
+    Y = cp_1.astype(np.float32) * mul
+
+    if augment:
+        if diff:
+            bs = Y.shape[0]
+            identity = np.tile(np.eye(3)[np.newaxis], (bs, 1, 1))
+            if rot == "quat":
+                X1aug = np.concatenate([R.from_matrix(R_l_0).as_quat(), R.from_matrix(identity).as_quat(),
+                                        R.from_matrix(R_r_0).as_quat(), R.from_matrix(identity).as_quat(),
+                                        ], axis=-1).astype(np.float32)
+            elif rot == "rotmat":
+                X1aug = np.concatenate([R_l_0.reshape((-1, 9)), identity.reshape((-1, 9)),
+                                        R_r_0.reshape((-1, 9)), identity.reshape((-1, 9)),
+                                        ], axis=-1)
+            elif rot == "rotvec":
+                X1aug = np.concatenate([R.from_matrix(R_l_0).as_rotvec(), R.from_matrix(identity).as_rotvec(),
+                                        R.from_matrix(R_r_0).as_rotvec(), R.from_matrix(identity).as_rotvec(),
+                                        ], axis=-1).astype(np.float32)
+            elif rot == "euler":
+                X1aug = np.concatenate([R.from_matrix(R_l_0).as_euler("xyz"), R.from_matrix(identity).as_euler("xyz"),
+                                        R.from_matrix(R_r_0).as_euler("xyz"), R.from_matrix(identity).as_euler("xyz"),
+                                        ], axis=-1).astype(np.float32)
+            X2aug = np.concatenate([xyz_l_0 * mul,
+                                    np.zeros_like(xyz_l_1) * mul,
+                                    ], axis=-1).astype(np.float32)
+        else:
+            if rot == "quat":
+                X1aug = np.concatenate([R.from_matrix(R_l_0).as_quat(), R.from_matrix(R_l_0).as_quat(),
+                                        R.from_matrix(R_r_0).as_quat(), R.from_matrix(R_r_0).as_quat(),
+                                        ], axis=-1).astype(np.float32)
+            elif rot == "rotmat":
+                X1aug = np.concatenate([R_l_0.reshape((-1, 9)), R_l_0.reshape((-1, 9)),
+                                        R_r_0.reshape((-1, 9)), R_r_0.reshape((-1, 9)),
+                                        ], axis=-1)
+            elif rot == "rotvec":
+                X1aug = np.concatenate([R.from_matrix(R_l_0).as_rotvec(), R.from_matrix(R_l_0).as_rotvec(),
+                                        R.from_matrix(R_r_0).as_rotvec(), R.from_matrix(R_r_0).as_rotvec(),
+                                        ], axis=-1).astype(np.float32)
+            elif rot == "euler":
+                X1aug = np.concatenate([R.from_matrix(R_l_0).as_euler("xyz"), R.from_matrix(R_l_0).as_euler("xyz"),
+                                        R.from_matrix(R_r_0).as_euler("xyz"), R.from_matrix(R_r_0).as_euler("xyz"),
+                                        ], axis=-1).astype(np.float32)
+            X2aug = np.concatenate([xyz_l_0 * mul,
+                                    xyz_l_0 * mul,
+                                    ], axis=-1).astype(np.float32)
+
+        X3aug = cp_0.astype(np.float32) * mul
+        X3daug = np.concatenate([X3aug[:, :1], np.diff(X3aug, axis=1)], axis=1)
+        X3aug = np.concatenate([X3aug, X3daug], axis=-1)
+        Yaug = cp_0.astype(np.float32) * mul
+
+        X1 = np.concatenate([X1, X1aug], axis=0)
+        X2 = np.concatenate([X2, X2aug], axis=0)
+        X3 = np.concatenate([X3, X3aug], axis=0)
+        Y = np.concatenate([Y, Yaug], axis=0)
+
+    X1 = X1.astype(np.float32)
+    X2 = X2.astype(np.float32)
+    X3 = X3.astype(np.float32)
+    Y = Y.astype(np.float32)
+
+    ds_size = data.shape[0]
+    ds = tf.data.Dataset.from_tensor_slices({"x1": X1, "x2": X2, "x3": X3, "y": Y})
+    return ds, ds_size, X1, X2, X3, Y#, data
 
 def prepare_dataset_cond_ref(path, n=0, quat=False, diff=False, augment=False):
     data = np.loadtxt(path, delimiter='\t').astype(np.float32)

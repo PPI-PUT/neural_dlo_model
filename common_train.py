@@ -21,7 +21,7 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 
 from utils.dataset import _ds, prepare_dataset, whiten, mix_datasets, whitening, compute_ds_stats, unpack_rotation, \
-    unpack_translation, prepare_dataset_cond, unpack_cable
+    unpack_translation, prepare_dataset_cond, unpack_cable, prepare_dataset_cond_lennorm
 from utils.execution import ExperimentHandler
 from models.basic_neural_predictor import BasicNeuralPredictor
 
