@@ -86,7 +86,7 @@ val_ds, val_size, vX1, vX2, vX3, vY = prepare_dataset_cond(args.dataset_path.rep
 #train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=rot, diff=diff, augment=True)  # , n=10)
 val_ds, val_size, vX1, vX2, vX3, vY = prepare_dataset_cond(args.dataset_path.replace("train", "val"), rot=rot, diff=diff)
 
-ds_stats = compute_ds_stats(train_ds)
+ds_stats = compute_ds_stats(train_ds, norm=norm)
 
 opt = tf.keras.optimizers.Adam(args.learning_rate)
 

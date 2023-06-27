@@ -135,10 +135,13 @@ def mix_datasets(tX1, tX2, tX3, tY, vX1, vX2, vX3, vY):
     return tX1, tX2, tX3, tY, vX1, vX2, vX3, vY, train_size, val_size
 
 
-def compute_ds_stats(ds):
+def compute_ds_stats(ds, norm=False):
     x1s = np.stack([data["x1"] for data in ds], axis=0)
     x2s = np.stack([data["x2"] for data in ds], axis=0)
-    x3s = np.stack([data["x3"] for data in ds], axis=0)
+    if norm:
+        x3s = np.stack([normalize_cable(data["x3"]) for data in ds], axis=0)
+    else:
+        x3s = np.stack([data["x3"] for data in ds], axis=0)
     ys = np.stack([data["y"] for data in ds], axis=0)
     ds_stats = dict(
         m1=np.mean(x1s, axis=0, keepdims=True),
