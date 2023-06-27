@@ -202,8 +202,8 @@ def unpack_cable(data):
 
 
 def normalize_cable(cable):
-    cable_len = np.sum(np.linalg.norm(cable[:, 1:, :3] - cable[:, :-1, :3], axis=-1), axis=-1)
-    cable = cable / cable_len[:, np.newaxis, np.newaxis]
+    cable_len = np.sum(np.linalg.norm(cable[..., 1:, :3] - cable[..., :-1, :3], axis=-1), axis=-1)
+    cable = cable / cable_len[..., np.newaxis, np.newaxis]
     return cable
 
 
