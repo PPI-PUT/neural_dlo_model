@@ -124,7 +124,7 @@ experiment_handler = ExperimentHandler(args.working_dir, args.out_name, args.log
 def inference(rotation, translation, cable):
     cable_ = cable
     if norm:
-        cable_ = np.concatenate([normalize_cable(cable[..., :3]), normalize_cable(cable[..., 3:])], -1)
+        cable_ = normalize_cable(cable)
     rotation_, translation_, cable_ = whitening(rotation, translation, cable_, ds_stats)
     R_l_0, R_l_1, R_r_0, R_r_1 = unpack_rotation(rotation_)
     t_l_0, t_l_1 = unpack_translation(translation_)
