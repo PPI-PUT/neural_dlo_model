@@ -21,7 +21,7 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 
 from utils.dataset import _ds, prepare_dataset, whiten, mix_datasets, whitening, compute_ds_stats, unpack_rotation, \
-    unpack_translation, prepare_dataset_cond, unpack_cable, prepare_dataset_cond_lennorm
+    unpack_translation, prepare_dataset_cond, unpack_cable, normalize_cable
 from utils.execution import ExperimentHandler
 from models.basic_neural_predictor import BasicNeuralPredictor
 
@@ -77,7 +77,12 @@ diff = True
 rot = "rotvec"
 #ifdcable = True
 ifdcable = False
-train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=rot, diff=diff)  # , n=10)
+#norm = False
+norm = True
+
+train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=rot, diff=diff, norm=norm)  # , n=10)
+##train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=rot, diff=diff, augment=True, norm=norm)  # , n=10)
+val_ds, val_size, vX1, vX2, vX3, vY = prepare_dataset_cond(args.dataset_path.replace("train", "val"), rot=rot, diff=diff, norm=norm)
 #train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=rot, diff=diff, augment=True)  # , n=10)
 val_ds, val_size, vX1, vX2, vX3, vY = prepare_dataset_cond(args.dataset_path.replace("train", "val"), rot=rot, diff=diff)
 
@@ -89,7 +94,7 @@ loss = CablePtsLoss()
 
 # model = BasicNeuralPredictor()
 # model = SeparatedCNNNeuralPredictor()
-#model = SeparatedNeuralPredictor()
+model = SeparatedNeuralPredictor()
 #model = ScaleNeuralPredictor1()
 #model = ScaleNeuralPredictor2()
 #model = INBiLSTM()
@@ -100,24 +105,27 @@ loss = CablePtsLoss()
 
 
 features = []
-for data in train_ds:
-    rotation_, translation_, cable_ = whitening(data["x1"], data["x2"], data["x3"], ds_stats)
-    R_l_0, R_l_1, R_r_0, R_r_1 = unpack_rotation(rotation_)
-    t_l_0, t_l_1 = unpack_translation(translation_)
-    cable_, dcable_ = unpack_cable(cable_)
-    cab = dcable_ if ifdcable else cable_
-    cab = np.reshape(cab, (cab.shape[0], -1))
-    f = np.concatenate([R_l_0, R_r_0, t_l_0, cab], axis=-1)
-    features.append(f)
-features = np.concatenate(features, 0)
+#for data in train_ds:
+#    rotation_, translation_, cable_ = whitening(data["x1"], data["x2"], data["x3"], ds_stats)
+#    R_l_0, R_l_1, R_r_0, R_r_1 = unpack_rotation(rotation_)
+#    t_l_0, t_l_1 = unpack_translation(translation_)
+#    cable_, dcable_ = unpack_cable(cable_)
+#    cab = dcable_ if ifdcable else cable_
+#    cab = np.reshape(cab, (cab.shape[0], -1))
+#    f = np.concatenate([R_l_0, R_r_0, t_l_0, cab], axis=-1)
+#    features.append(f)
+#features = np.concatenate(features, 0)
 
-model = JacobianRBFN(rot, diff, features)
+#model = JacobianRBFN(rot, diff, features)
 
 experiment_handler = ExperimentHandler(args.working_dir, args.out_name, args.log_interval, model, opt)
 
 
 def inference(rotation, translation, cable):
-    rotation_, translation_, cable_ = whitening(rotation, translation, cable, ds_stats)
+    cable_ = cable
+    if norm:
+        cable_ = normalize_cable(cable)
+    rotation_, translation_, cable_ = whitening(rotation, translation, cable_, ds_stats)
     R_l_0, R_l_1, R_r_0, R_r_1 = unpack_rotation(rotation_)
     t_l_0, t_l_1 = unpack_translation(translation_)
     cable_, dcable_ = unpack_cable(cable_)

@@ -198,7 +198,13 @@ def unpack_cable(data):
     return cable, dcable
 
 
-def prepare_dataset_cond(path, rot, n=0, diff=False, augment=False):
+def normalize_cable(cable):
+    cable_len = np.sum(np.linalg.norm(cable[:, 1:] - cable[:, :-1], axis=-1), axis=-1)
+    cable = cable / cable_len[:, np.newaxis, np.newaxis]
+    return cable
+
+
+def prepare_dataset_cond(path, rot, n=0, diff=False, augment=False, norm=False):
     assert rot in ["quat", "rotmat", "rotvec", "euler"]
     data = np.loadtxt(path, delimiter='\t').astype(np.float32)
     if n > 0:
@@ -216,6 +222,14 @@ def prepare_dataset_cond(path, rot, n=0, diff=False, augment=False):
     diff_R_l = np.transpose(R_l_0, (0, 2, 1)) @ R_l_1
     diff_R_r = np.transpose(R_r_0, (0, 2, 1)) @ R_r_1
     mul = 1.
+
+    if norm:
+        c0_len = np.sum(np.linalg.norm(cp_0[:, 1:] - cp_0[:, :-1], axis=-1), axis=-1)
+        c1_len = np.sum(np.linalg.norm(cp_1[:, 1:] - cp_1[:, :-1], axis=-1), axis=-1)
+        # normalize translations by length
+        xyz_l_0 = xyz_l_0 / c0_len[:, np.newaxis]
+        xyz_l_1 = xyz_l_1 / c1_len[:, np.newaxis]
+
     if diff:
         if rot == "quat":
             X1 = np.concatenate([R.from_matrix(R_l_0).as_quat(), R.from_matrix(diff_R_l).as_quat(),
