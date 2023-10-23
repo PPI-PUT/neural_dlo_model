@@ -7,6 +7,7 @@ from models.cnn import CNN
 from models.cnn_sep import CNNSep
 from models.inbilstm import INBiLSTM
 from models.jacobian_neural_predictor import JacobianNeuralPredictor, JacobianRBFN
+from models.linear_neural_predictor import LinearNeuralPredictor
 from models.scale_neural_predictor import ScaleNeuralPredictor, ScaleNeuralPredictor1, ScaleNeuralPredictor2
 from models.separated_cnn_neural_predictor import SeparatedCNNNeuralPredictor
 from models.separated_neural_predictor import SeparatedNeuralPredictor
@@ -94,7 +95,8 @@ loss = CablePtsLoss()
 
 # model = BasicNeuralPredictor()
 # model = SeparatedCNNNeuralPredictor()
-model = SeparatedNeuralPredictor()
+#model = SeparatedNeuralPredictor()
+model = LinearNeuralPredictor()
 #model = ScaleNeuralPredictor1()
 #model = ScaleNeuralPredictor2()
 #model = INBiLSTM()
