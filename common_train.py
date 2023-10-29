@@ -12,6 +12,7 @@ from models.scale_neural_predictor import ScaleNeuralPredictor, ScaleNeuralPredi
 from models.separated_cnn_neural_predictor import SeparatedCNNNeuralPredictor
 from models.separated_neural_predictor import SeparatedNeuralPredictor
 from models.transformer import Transformer
+from models.transformer_new import TransformerNew
 from utils.bspline import BSpline
 from utils.constants import BSplineConstants
 
@@ -96,13 +97,14 @@ loss = CablePtsLoss()
 # model = BasicNeuralPredictor()
 # model = SeparatedCNNNeuralPredictor()
 #model = SeparatedNeuralPredictor()
-model = LinearNeuralPredictor()
+#model = LinearNeuralPredictor()
 #model = ScaleNeuralPredictor1()
 #model = ScaleNeuralPredictor2()
 #model = INBiLSTM()
 # model = CNN()
 # model = CNNSep()
 #model = Transformer(num_layers=2, num_heads=8, dff=256, d_model=64, dropout_rate=0.1, target_size=3)
+model = TransformerNew(num_layers=2, num_heads=8, dff=256, d_model=64, target_size=3)
 #model = JacobianNeuralPredictor(rot, diff)
 
 
