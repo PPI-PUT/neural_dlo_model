@@ -182,8 +182,8 @@ def unpack_rotation(rotation):
 
 
 def unpack_translation(translation):
-    t_l_0 = translation[:, :3]
-    t_l_1 = translation[:, 3:]
+    t_l_0 = translation[:, :-3]
+    t_l_1 = translation[:, -3:]
     return t_l_0, t_l_1
 
 

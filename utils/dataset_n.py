@@ -6,6 +6,7 @@ from scipy.spatial.transform import Rotation as R
 from utils.constants import BSplineConstants
 import matplotlib.pyplot as plt
 
+
 def prepare_dataset_cond(path, rot, n=0, diff=False, augment=False, norm=False, scale=1.):
     assert rot in ["quat", "rotmat", "rotvec", "euler"]
     data = np.load(path)
@@ -16,15 +17,16 @@ def prepare_dataset_cond(path, rot, n=0, diff=False, augment=False, norm=False, 
     R_l_0 = data[:, :-1, :9].reshape((data.shape[0], data.shape[1] - 1, 3, 3))
     R_r_0 = data[:, :-1, 9:18].reshape((data.shape[0], data.shape[1] - 1, 3, 3))
     xyz_l_0 = data[:, :-1, 18:21] * scale
-    cp_0 = data[:, :-1, 21:21 + ncp].reshape((data.shape[0], data.shape[1] - 1, BSplineConstants.n, BSplineConstants.dim)) * scale
-    #for i in range(cp_0.shape[0]):
-    #for i in range(100):
+    cp_0 = data[:, :-1, 21:21 + ncp].reshape(
+        (data.shape[0], data.shape[1] - 1, BSplineConstants.n, BSplineConstants.dim)) * scale
+    # for i in range(cp_0.shape[0]):
+    # for i in range(100):
     #    plt.subplot(211)
     #    plt.plot(cp_0[i, ..., 1], cp_0[i, ..., 2])
     #    plt.subplot(212)
     #    plt.plot(cp_0[i, ..., 1], cp_0[i, ..., 0])
-    #plt.gca().set_aspect('equal')
-    #plt.show()
+    # plt.gca().set_aspect('equal')
+    # plt.show()
     R_l_1 = data[:, -1, :9].reshape((-1, 3, 3))
     R_r_1 = data[:, -1, 9:18].reshape((-1, 3, 3))
     xyz_l_1 = data[:, -1, 18:21] * scale
@@ -108,59 +110,59 @@ def prepare_dataset_cond(path, rot, n=0, diff=False, augment=False, norm=False, 
             identity = np.tile(np.eye(3)[np.newaxis], (bs, 1, 1))
             if rot == "quat":
                 X1aug = np.concatenate([*[R.from_matrix(R_l_0[:, i]).as_quat() for i in range(R_l_0.shape[1])],
-                                     R.from_matrix(identity).as_quat(),
-                                     *[R.from_matrix(R_r_0[:, i]).as_quat() for i in range(R_r_0.shape[1])],
-                                     R.from_matrix(identity).as_quat(),
-                                     ], axis=-1).astype(np.float32)
+                                        R.from_matrix(identity).as_quat(),
+                                        *[R.from_matrix(R_r_0[:, i]).as_quat() for i in range(R_r_0.shape[1])],
+                                        R.from_matrix(identity).as_quat(),
+                                        ], axis=-1).astype(np.float32)
             elif rot == "rotmat":
                 X1aug = np.concatenate([*[R_l_0[:, i].reshape((-1, 9)) for i in range(R_l_0.shape[1])],
-                                     identity.reshape((-1, 9)),
-                                     *[R_r_0[:, i].reshape((-1, 9)) for i in range(R_r_0.shape[1])],
-                                     identity.reshape((-1, 9)),
-                                     ], axis=-1).astype(np.float32)
+                                        identity.reshape((-1, 9)),
+                                        *[R_r_0[:, i].reshape((-1, 9)) for i in range(R_r_0.shape[1])],
+                                        identity.reshape((-1, 9)),
+                                        ], axis=-1).astype(np.float32)
             elif rot == "rotvec":
                 X1aug = np.concatenate([*[R.from_matrix(R_l_0[:, i]).as_rotvec() for i in range(R_l_0.shape[1])],
-                                     R.from_matrix(identity).as_rotvec(),
-                                     *[R.from_matrix(R_r_0[:, i]).as_rotvec() for i in range(R_r_0.shape[1])],
-                                     R.from_matrix(identity).as_rotvec(),
-                                     ], axis=-1).astype(np.float32)
+                                        R.from_matrix(identity).as_rotvec(),
+                                        *[R.from_matrix(R_r_0[:, i]).as_rotvec() for i in range(R_r_0.shape[1])],
+                                        R.from_matrix(identity).as_rotvec(),
+                                        ], axis=-1).astype(np.float32)
             elif rot == "euler":
                 X1aug = np.concatenate([*[R.from_matrix(R_l_0[:, i]).as_euler("xyz") for i in range(R_l_0.shape[1])],
-                                     R.from_matrix(identity).as_euler("xyz"),
-                                     *[R.from_matrix(R_r_0[:, i]).as_euler("xyz") for i in range(R_r_0.shape[1])],
-                                     R.from_matrix(identity).as_euler("xyz"),
-                                     ], axis=-1).astype(np.float32)
+                                        R.from_matrix(identity).as_euler("xyz"),
+                                        *[R.from_matrix(R_r_0[:, i]).as_euler("xyz") for i in range(R_r_0.shape[1])],
+                                        R.from_matrix(identity).as_euler("xyz"),
+                                        ], axis=-1).astype(np.float32)
             X2aug = np.concatenate([*[xyz_l_0[:, i] * mul for i in range(xyz_l_0.shape[1])],
                                     np.zeros_like(xyz_l_1) * mul,
                                     ], axis=-1).astype(np.float32)
         else:
             if rot == "quat":
                 X1aug = np.concatenate([*[R.from_matrix(R_l_0[:, i]).as_quat() for i in range(R_l_0.shape[1])],
-                                     R.from_matrix(R_l_0[:, -1]).as_quat(),
-                                     *[R.from_matrix(R_r_0[:, i]).as_quat() for i in range(R_r_0.shape[1])],
-                                     R.from_matrix(R_r_0[:, -1]).as_quat(),
-                                     ], axis=-1).astype(np.float32)
+                                        R.from_matrix(R_l_0[:, -1]).as_quat(),
+                                        *[R.from_matrix(R_r_0[:, i]).as_quat() for i in range(R_r_0.shape[1])],
+                                        R.from_matrix(R_r_0[:, -1]).as_quat(),
+                                        ], axis=-1).astype(np.float32)
             elif rot == "rotmat":
                 X1aug = np.concatenate([*[R_l_0[:, i].reshape((-1, 9)) for i in range(R_l_0.shape[1])],
-                                     R_l_0[:, -1].reshape((-1, 9)),
-                                     *[R_r_0[:, i].reshape((-1, 9)) for i in range(R_r_0.shape[1])],
-                                     R_r_0[:, -1].reshape((-1, 9)),
-                                     ], axis=-1).astype(np.float32)
+                                        R_l_0[:, -1].reshape((-1, 9)),
+                                        *[R_r_0[:, i].reshape((-1, 9)) for i in range(R_r_0.shape[1])],
+                                        R_r_0[:, -1].reshape((-1, 9)),
+                                        ], axis=-1).astype(np.float32)
             elif rot == "rotvec":
                 X1aug = np.concatenate([*[R.from_matrix(R_l_0[:, i]).as_rotvec() for i in range(R_l_0.shape[1])],
-                                     R.from_matrix(R_l_0[:, -1]).as_rotvec(),
-                                     *[R.from_matrix(R_r_0[:, i]).as_rotvec() for i in range(R_r_0.shape[1])],
-                                     R.from_matrix(R_r_0[:, -1]).as_rotvec(),
-                                     ], axis=-1).astype(np.float32)
+                                        R.from_matrix(R_l_0[:, -1]).as_rotvec(),
+                                        *[R.from_matrix(R_r_0[:, i]).as_rotvec() for i in range(R_r_0.shape[1])],
+                                        R.from_matrix(R_r_0[:, -1]).as_rotvec(),
+                                        ], axis=-1).astype(np.float32)
             elif rot == "euler":
                 X1aug = np.concatenate([*[R.from_matrix(R_l_0[:, i]).as_euler("xyz") for i in range(R_l_0.shape[1])],
-                                     R.from_matrix(R_l_0[:, -1]).as_euler("xyz"),
-                                     *[R.from_matrix(R_r_0[:, i]).as_euler("xyz") for i in range(R_r_0.shape[1])],
-                                     R.from_matrix(R_r_0[:, -1]).as_euler("xyz"),
-                                     ], axis=-1).astype(np.float32)
+                                        R.from_matrix(R_l_0[:, -1]).as_euler("xyz"),
+                                        *[R.from_matrix(R_r_0[:, i]).as_euler("xyz") for i in range(R_r_0.shape[1])],
+                                        R.from_matrix(R_r_0[:, -1]).as_euler("xyz"),
+                                        ], axis=-1).astype(np.float32)
             X2aug = np.concatenate([*[xyz_l_0[:, i] * mul for i in range(xyz_l_0.shape[1])],
-                                 xyz_l_0[:, -1] * mul,
-                                 ], axis=-1)
+                                    xyz_l_0[:, -1] * mul,
+                                    ], axis=-1)
 
         X3aug = cp_0.astype(np.float32) * mul
         X3daug = np.concatenate([X3aug[:, :, :1], np.diff(X3aug, axis=-2)], axis=-2)
@@ -181,3 +183,13 @@ def prepare_dataset_cond(path, rot, n=0, diff=False, augment=False, norm=False, 
     ds_size = data.shape[0]
     ds = tf.data.Dataset.from_tensor_slices({"x1": X1, "x2": X2, "x3": X3, "y": Y})
     return ds, ds_size, X1, X2, X3, Y  # , data
+
+
+def unpack_rotation(rotation, n=2):
+    size = rotation.shape[-1]
+    step = int(size / ((n + 1) * 2))
+    R_l_0 = rotation[:, :n*step]
+    R_l_1 = rotation[:, n*step:(n+1)*step]
+    R_r_0 = rotation[:, (n+1)*step:(2*n+1)*step]
+    R_r_1 = rotation[:, (2*n+1)*step:]
+    return R_l_0, R_l_1, R_r_0, R_r_1

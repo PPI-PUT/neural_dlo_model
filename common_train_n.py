@@ -22,9 +22,9 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
-from utils.dataset import compute_ds_stats, normalize_cable, whitening, unpack_rotation, unpack_translation, \
+from utils.dataset import compute_ds_stats, normalize_cable, whitening, unpack_translation, \
     unpack_cable, _ds
-from utils.dataset_n import prepare_dataset_cond
+from utils.dataset_n import prepare_dataset_cond, unpack_rotation
 from utils.execution import ExperimentHandler
 from models.basic_neural_predictor import BasicNeuralPredictor
 
