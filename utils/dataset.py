@@ -209,7 +209,13 @@ def normalize_cable(cable):
 
 def prepare_dataset_cond(path, rot, n=0, diff=False, augment=False, norm=False):
     assert rot in ["quat", "rotmat", "rotvec", "euler"]
-    data = np.loadtxt(path, delimiter='\t').astype(np.float32)
+    if path.endswith(".tsv"):
+        data = np.loadtxt(path, delimiter='\t').astype(np.float32)
+    elif path.endswith(".npy"):
+        data = np.load(path).astype(np.float32)
+    else:
+        print("Wrong data file format")
+        assert False
     if n > 0:
         idx = np.random.randint(0, data.shape[0] - 1, n)
         data = data[idx]
