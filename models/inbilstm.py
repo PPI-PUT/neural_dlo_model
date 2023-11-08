@@ -1,6 +1,5 @@
 import tensorflow as tf
-from keras import Sequential
-from keras.layers import Bidirectional, LSTM
+from tensorflow.python.keras.layers import LSTM
 
 from utils.constants import BSplineConstants
 
@@ -19,25 +18,25 @@ class INBiLSTM(tf.keras.Model):
             tf.keras.layers.Dense(N, activation),
         ]
 
-        self.point_encoder = Sequential([
+        self.point_encoder = tf.keras.Sequential([
             tf.keras.layers.Dense(N, activation),
             tf.keras.layers.Dense(N, activation),
             tf.keras.layers.Dense(N, activation),
             tf.keras.layers.Dense(N, activation),
         ])
 
-        self.point_predictor = Sequential([
+        self.point_predictor = tf.keras.Sequential([
             tf.keras.layers.Dense(N, activation),
             tf.keras.layers.Dense(N, activation),
             tf.keras.layers.Dense(N, activation),
             tf.keras.layers.Dense(3, activation),
         ])
 
-        self.bilstm = Sequential([
+        self.bilstm = tf.keras.Sequential([
             # Bidirectional(LSTM(N, return_sequences=True), merge_mode="sum"),
             # Bidirectional(LSTM(N, return_sequences=True), merge_mode="sum"),
-            Bidirectional(LSTM(int(N / 2), return_sequences=True)),
-            Bidirectional(LSTM(int(N / 2), return_sequences=True)),
+            tf.keras.layers.Bidirectional(LSTM(int(N / 2), return_sequences=True)),
+            tf.keras.layers.Bidirectional(LSTM(int(N / 2), return_sequences=True)),
         ])
 
         self.action_left = [
