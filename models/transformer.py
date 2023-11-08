@@ -3,6 +3,7 @@ import numpy as np
 from keras.layers import Dense
 
 from utils.constants import BSplineConstants
+import tensorflow_models as tfm
 
 
 def positional_encoding(length, depth):
@@ -40,21 +41,30 @@ class PositionalEmbedding(tf.keras.layers.Layer):
 class BaseAttention(tf.keras.layers.Layer):
     def __init__(self, **kwargs):
         super().__init__()
-        self.mha = tf.keras.layers.MultiHeadAttention(**kwargs)
+        #self.mha = tf.keras.layers.MultiHeadAttention(**kwargs)
+        self.mha = tfm.nlp.layers.KernelAttention(
+            feature_transform='exp',
+            **kwargs
+        )
         self.layernorm = tf.keras.layers.LayerNormalization()
         self.add = tf.keras.layers.Add()
 
 
 class CrossAttention(BaseAttention):
     def call(self, x, context):
-        attn_output, attn_scores = self.mha(
+        attn_output = self.mha(
             query=x,
             key=context,
-            value=context,
-            return_attention_scores=True)
+            value=context)
+
+        #attn_output, attn_scores = self.mha(
+        #    query=x,
+        #    key=context,
+        #    value=context,
+        #    return_attention_scores=True)
 
         # Cache the attention scores for plotting later.
-        self.last_attn_scores = attn_scores
+        #self.last_attn_scores = attn_scores
 
         x = self.add([x, attn_output])
         x = self.layernorm(x)
@@ -111,7 +121,7 @@ class DecoderLayer(tf.keras.layers.Layer):
         x = self.cross_attention(x=x, context=context)
 
         # Cache the last attention scores for plotting later
-        self.last_attn_scores = self.cross_attention.last_attn_scores
+        #self.last_attn_scores = self.cross_attention.last_attn_scores
 
         x = self.ffn(x)  # Shape `(batch_size, seq_len, d_model)`.
         return x
@@ -143,7 +153,7 @@ class Decoder(tf.keras.layers.Layer):
         for i in range(self.num_layers):
             x = self.dec_layers[i](x, context)
 
-        self.last_attn_scores = self.dec_layers[-1].last_attn_scores
+        #self.last_attn_scores = self.dec_layers[-1].last_attn_scores
 
         # The shape of x is (batch_size, target_seq_len, d_model).
         return x
