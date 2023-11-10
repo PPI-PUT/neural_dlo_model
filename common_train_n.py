@@ -61,6 +61,7 @@ if rot == "rotvec":
     rot_dim = 3
 elif rot == "quat":
     rot_dim = 4
+N = 2
 
 train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=rot, diff=diff, norm=norm, augment=False, n=10)
 #train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=rot, diff=diff, norm=norm, augment=True, n=10)  # , n=10)
@@ -110,11 +111,11 @@ def inference(rotation, translation, cable):
     if norm:
         cable_ = normalize_cable(cable)
     rotation_, translation_, cable_ = whitening(rotation, translation, cable_, ds_stats)
-    R_l_0, R_l_1, R_r_0, R_r_1 = unpack_rotation(rotation_, rot_dim, n=1)
-    t_l_0, t_l_1 = unpack_translation(translation_, n=1)
-    cable_, dcable_ = unpack_cable(cable_, n=1)
+    R_l_0, R_l_1, R_r_0, R_r_1 = unpack_rotation(rotation_, rot_dim, n=N)
+    t_l_0, t_l_1 = unpack_translation(translation_, n=N)
+    cable_, dcable_ = unpack_cable(cable_, n=N)
     y_pred_ = model((R_l_0, R_l_1, R_r_0, R_r_1), (t_l_0, t_l_1), dcable_ if ifdcable else cable_,
-                    unpack_rotation(rotation, rot_dim, n=1), unpack_translation(translation, n=1))
+                    unpack_rotation(rotation, rot_dim, n=N), unpack_translation(translation, n=N))
     #y_pred_ = model((R_l_0, R_l_1, R_r_0, R_r_1), (t_l_0, t_l_1), dcable_ if ifdcable else cable_)
     #y_pred = y_pred_ * ds_stats["sy"] + ds_stats["my"]
     y_pred = y_pred_
