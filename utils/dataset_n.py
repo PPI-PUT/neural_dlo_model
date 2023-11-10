@@ -185,11 +185,26 @@ def prepare_dataset_cond(path, rot, n=0, diff=False, augment=False, norm=False, 
     return ds, ds_size, X1, X2, X3, Y  # , data
 
 
-def unpack_rotation(rotation, n=2):
-    size = rotation.shape[-1]
-    step = int(size / ((n + 1) * 2))
-    R_l_0 = rotation[:, :n*step]
-    R_l_1 = rotation[:, n*step:(n+1)*step]
-    R_r_0 = rotation[:, (n+1)*step:(2*n+1)*step]
-    R_r_1 = rotation[:, (2*n+1)*step:]
+def unpack_rotation(rotation, rot_dim, n=2):
+    half = int(rotation.shape[1] / 2)
+    rotation_l = rotation[:, :half]
+    rotation_r = rotation[:, half:]
+    R_l_0 = rotation_l[:, -(n+1) * rot_dim:-rot_dim]
+    R_l_1 = rotation_l[:, -rot_dim:]
+    R_r_0 = rotation_r[:, -(n+1) * rot_dim:-rot_dim]
+    R_r_1 = rotation_r[:, -rot_dim:]
     return R_l_0, R_l_1, R_r_0, R_r_1
+
+
+def unpack_translation(translation, n=2):
+    t_l_0 = translation[:, -3 - (n * 3):-3]
+    t_l_1 = translation[:, -3:]
+    return t_l_0, t_l_1
+
+
+def unpack_cable(data, n=2):
+    cable = data[..., -n * BSplineConstants.n:, :3]
+    dcable = data[..., -n * BSplineConstants.n:, 3:]
+    return cable, dcable
+
+

@@ -22,9 +22,8 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
-from utils.dataset import compute_ds_stats, normalize_cable, whitening, unpack_translation, \
-    unpack_cable, _ds
-from utils.dataset_n import prepare_dataset_cond, unpack_rotation
+from utils.dataset import compute_ds_stats, normalize_cable, whitening, _ds
+from utils.dataset_n import prepare_dataset_cond, unpack_rotation, unpack_cable, unpack_translation
 from utils.execution import ExperimentHandler
 from models.basic_neural_predictor import BasicNeuralPredictor
 
@@ -45,6 +44,7 @@ class args:
     len_loss = 0
     acc_loss = 0e-1
     dataset_path = "./data/prepared_datasets/10_30_n2_off3cm_50cm/train.npy"
+    #dataset_path = "./data/prepared_datasets/dataset_neural_network_points_8_0.03_0.0_0.0/train.npy"
 
 
 #diff = True
@@ -56,6 +56,11 @@ rot = "rotmat"
 ifdcable = False
 norm = False
 #norm = True
+rot_dim = 9
+if rot == "rotvec":
+    rot_dim = 3
+elif rot == "quat":
+    rot_dim = 4
 
 train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=rot, diff=diff, norm=norm, augment=False, n=10)
 #train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=rot, diff=diff, norm=norm, augment=True, n=10)  # , n=10)
@@ -105,15 +110,15 @@ def inference(rotation, translation, cable):
     if norm:
         cable_ = normalize_cable(cable)
     rotation_, translation_, cable_ = whitening(rotation, translation, cable_, ds_stats)
-    R_l_0, R_l_1, R_r_0, R_r_1 = unpack_rotation(rotation_)
-    t_l_0, t_l_1 = unpack_translation(translation_)
-    cable_, dcable_ = unpack_cable(cable_)
+    R_l_0, R_l_1, R_r_0, R_r_1 = unpack_rotation(rotation_, rot_dim, n=1)
+    t_l_0, t_l_1 = unpack_translation(translation_, n=1)
+    cable_, dcable_ = unpack_cable(cable_, n=1)
     y_pred_ = model((R_l_0, R_l_1, R_r_0, R_r_1), (t_l_0, t_l_1), dcable_ if ifdcable else cable_,
-                    unpack_rotation(rotation), unpack_translation(translation))
+                    unpack_rotation(rotation, rot_dim, n=1), unpack_translation(translation, n=1))
     #y_pred_ = model((R_l_0, R_l_1, R_r_0, R_r_1), (t_l_0, t_l_1), dcable_ if ifdcable else cable_)
     #y_pred = y_pred_ * ds_stats["sy"] + ds_stats["my"]
     y_pred = y_pred_
-    return y_pred + cable[..., -64:, :3]
+    return y_pred + cable[..., -BSplineConstants.n:, :BSplineConstants.dim]
 
 
 train_step = 0
