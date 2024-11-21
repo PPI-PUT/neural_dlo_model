@@ -5,5 +5,4 @@ pred_imgs_55/
 dlamb/
 *.png
 *.tsv
-*.npy
 *.pdf

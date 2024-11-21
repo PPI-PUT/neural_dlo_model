@@ -7,7 +7,8 @@ from utils.constants import BSplineConstants
 import matplotlib.pyplot as plt
 
 
-def prepare_dataset_cond(path, rot, n=0, diff=False, augment=False, norm=False, scale=1.):
+def \
+        prepare_dataset_cond(path, rot, n=0, diff=False, augment=False, norm=False, scale=1.):
     assert rot in ["quat", "rotmat", "rotvec", "euler"]
     data = np.load(path)
     if n > 0:
