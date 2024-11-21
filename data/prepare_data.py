@@ -35,7 +35,7 @@ def uvz2xyz(uvz, f, c):
 # ds_name = "xy_test"
 #ds_name = "xy"
 #ds_name = "yz_big"
-ds_name = "xyzrpy"
+ds_name = "xyzrpy/l50cm_all_sep_03_01"
 # ds_name = "dummy_dataset"
 #ds_type = "train"
 #ds_type = ""
@@ -60,9 +60,10 @@ ds_name = "xyzrpy"
 #ds_type = "l50cm_all_sep/train"
 #ds_type = "l50cm_all_sep_03_01/test"
 #ds_type = "l50cm_all_sep_03_01/train"
-ds_type = "l50cm_all_sep_03_01/val"
+#ds_type = "l50cm_all_sep_03_01/val"
 #ds_type = "02_24_nominal_l50cm_test"
 #ds_type = "l50cm_sep/train"
+ds_type = "train"
 N = 100
 # plots = True
 plots = False
@@ -78,7 +79,9 @@ R_base2base = np.array([[-1., 0., 0.], [0., -1., 0.], [0., 0., 1.]])
 
 color = ['r', 'g', 'b', 'c', 'm', 'k']
 #bsp = BSpline(BSplineConstants.n, BSplineConstants.dim)
-bsp = BSpline(BSplineConstants.n, BSplineConstants.dim, num_T_pts=1021)
+#bsp = BSpline(BSplineConstants.n, 3, num_T_pts=1021)
+#bsp = BSpline(16, 3, num_T_pts=1021)
+bsp = BSpline(16, 3, num_T_pts=BSplineConstants.n)
 
 for k, pkl in enumerate(sorted(glob(os.path.join(SCRIPT_DIR, ds_name, ds_type, "*.pkl")))):
     print(pkl)
@@ -178,15 +181,26 @@ for k, pkl in enumerate(sorted(glob(os.path.join(SCRIPT_DIR, ds_name, ds_type, "
             print("REVERSE")
             xyz_spline_control_pts_in_right_tcp_norot = xyz_spline_control_pts_in_right_tcp_norot[::-1]
 
+        #print(xyz_spline_control_pts_in_right_tcp_norot.shape)
+        #print(bsp.N.shape)
         xyz_bsp = bsp.N[0] @ xyz_spline_control_pts_in_right_tcp_norot[..., 0]
         length = np.sum(np.linalg.norm(np.diff(xyz_bsp, axis=0), axis=-1))
-        skip = 68
+        #length = np.sum(np.linalg.norm(np.diff(xyz_spline[..., 0], axis=0), axis=-1))
+        #skip = 68
+        #plt.subplot(121)
+        #plt.plot(xyz_bsp[:, 0], xyz_bsp[:, 1], 'r')
+        #plt.plot(xyz_spline_in_right_tcp_norot[:, 0], xyz_spline_in_right_tcp_norot[:, 1], 'b')
+        #plt.subplot(122)
+        #plt.plot(xyz_bsp[:, 0], xyz_bsp[:, 2], 'r')
+        #plt.plot(xyz_spline_in_right_tcp_norot[:, 0], xyz_spline_in_right_tcp_norot[:, 2], 'b')
+        #plt.show()
         states.append(np.concatenate([R_left_flange_in_base.reshape(-1), R_right_flange_in_base.reshape(-1),
                                       xyz_left_tcp_in_right_tcp_norot[:, 0],
                                       # xyz_spline_in_right_tcp_norot[::10].reshape(-1)
                                       #xyz_spline_in_right_tcp_norot.reshape(-1)
                                       #xyz_bsp[::skip].reshape(-1),
-                                      xyz_spline_control_pts_in_right_tcp_norot.reshape(-1),
+                                      xyz_bsp.reshape(-1),
+                                      #xyz_spline_control_pts_in_right_tcp_norot.reshape(-1),
                                       np.array([length])
                                       ], axis=0))
 
@@ -225,8 +239,10 @@ for k, pkl in enumerate(sorted(glob(os.path.join(SCRIPT_DIR, ds_name, ds_type, "
         plt.plot(xyz_spline_control_pts_in_right_tcp_norot[:, 1], xyz_spline_control_pts_in_right_tcp_norot[:, 2], color[k % len(color)] + "x")
         plt.subplot(223)
         plt.plot(xyz_bsp[:, 0], xyz_bsp[:, 1], color[k % len(color)])
+        #plt.plot(xyz_spline[:, 0], xyz_spline[:, 1], color[k % len(color)])
         plt.subplot(224)
         plt.plot(xyz_bsp[:, 1], xyz_bsp[:, 2], color[k % len(color)])
+        #plt.plot(xyz_spline[:, 1], xyz_spline[:, 2], color[k % len(color)])
         a = 0
         #k += 1
         #plt.show()
@@ -245,7 +261,7 @@ for k, pkl in enumerate(sorted(glob(os.path.join(SCRIPT_DIR, ds_name, ds_type, "
     #neural_dlo_model_dataset.append(states)
     for e in neural_dlo_model_dataset[-1]:
         file_debug.append(pkl)
-plt.show()
+#plt.show()
 #assert False
 neural_dlo_model_dataset = np.concatenate(neural_dlo_model_dataset, axis=0)
 

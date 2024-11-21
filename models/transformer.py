@@ -39,29 +39,33 @@ class PositionalEmbedding(tf.keras.layers.Layer):
 
 
 class BaseAttention(tf.keras.layers.Layer):
-    def __init__(self, **kwargs):
+    def __init__(self, kernel='exp', **kwargs):
         super().__init__()
         #self.mha = tf.keras.layers.MultiHeadAttention(**kwargs)
-        self.mha = tfm.nlp.layers.KernelAttention(
-            feature_transform='exp',
-            **kwargs
-        )
+        if kernel == 'exp':
+            self.mha = tf.keras.layers.MultiHeadAttention(**kwargs)
+        else:
+            self.mha = tfm.nlp.layers.KernelAttention(
+                #feature_transform='exp',
+                feature_transform=kernel,
+                **kwargs
+            )
         self.layernorm = tf.keras.layers.LayerNormalization()
         self.add = tf.keras.layers.Add()
 
 
 class CrossAttention(BaseAttention):
     def call(self, x, context):
-        attn_output = self.mha(
-            query=x,
-            key=context,
-            value=context)
-
-        #attn_output, attn_scores = self.mha(
+        #attn_output = self.mha(
         #    query=x,
         #    key=context,
-        #    value=context,
-        #    return_attention_scores=True)
+        #    value=context)
+
+        attn_output, attn_scores = self.mha(
+            query=x,
+            key=context,
+            value=context,
+            return_attention_scores=True)
 
         # Cache the attention scores for plotting later.
         #self.last_attn_scores = attn_scores
@@ -101,15 +105,17 @@ class FeedForward(tf.keras.layers.Layer):
 
 
 class DecoderLayer(tf.keras.layers.Layer):
-    def __init__(self, *, d_model, num_heads, dff, dropout_rate=0.1):
+    def __init__(self, *, d_model, num_heads, dff, kernel='exp', dropout_rate=0.1):
         super(DecoderLayer, self).__init__()
 
         self.global_self_attention = GlobalSelfAttention(
+            kernel=kernel,
             num_heads=num_heads,
             key_dim=d_model,
             dropout=dropout_rate)
 
         self.cross_attention = CrossAttention(
+            kernel=kernel,
             num_heads=num_heads,
             key_dim=d_model,
             dropout=dropout_rate)
@@ -128,7 +134,7 @@ class DecoderLayer(tf.keras.layers.Layer):
 
 
 class Decoder(tf.keras.layers.Layer):
-    def __init__(self, *, num_layers, d_model, num_heads, dff, dropout_rate=0.1):
+    def __init__(self, *, num_layers, d_model, num_heads, dff, kernel='exp', dropout_rate=0.1):
         super(Decoder, self).__init__()
 
         self.d_model = d_model
@@ -138,7 +144,7 @@ class Decoder(tf.keras.layers.Layer):
         self.dropout = tf.keras.layers.Dropout(dropout_rate)
         self.dec_layers = [
             DecoderLayer(d_model=d_model, num_heads=num_heads,
-                         dff=dff, dropout_rate=dropout_rate)
+                         dff=dff, kernel=kernel, dropout_rate=dropout_rate)
             for _ in range(num_layers)]
 
 
@@ -177,13 +183,13 @@ class Encoder(tf.keras.layers.Layer):
 
 class Transformer(tf.keras.Model):
     def __init__(self, *, num_layers, d_model, num_heads, dff,
-                 target_size, dropout_rate=0.1):
+                 target_size, kernel='exp', dropout_rate=0.1):
         super().__init__()
         self.encoder = Encoder(num_layers=num_layers, d_model=d_model,
                                dropout_rate=dropout_rate)
 
         self.decoder = Decoder(num_layers=num_layers, d_model=d_model,
-                               num_heads=num_heads, dff=dff,
+                               num_heads=num_heads, dff=dff, kernel=kernel,
                                dropout_rate=dropout_rate)
 
         self.final_layer = tf.keras.layers.Dense(target_size)
@@ -197,6 +203,7 @@ class Transformer(tf.keras.Model):
         x = cable
 
         context = self.encoder(context)[:, tf.newaxis]  # (batch_size, context_len, d_model)
+        #context = self.encoder(context)[..., tf.newaxis]  # (batch_size, context_len, d_model)
 
         x = self.decoder(x, context)  # (batch_size, target_len, d_model)
 

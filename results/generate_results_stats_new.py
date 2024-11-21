@@ -39,23 +39,34 @@ def boxplot(data, field, aug):
     aug = "augwithzeros" if aug else "noaug"
     keys = [k for k in keys if aug in k]
     v = [data[k][field] * 100. for k in keys]
-    names = []
-    for k in keys:
-        ks = k.split("_")
-        d = "DR" if ks[1] == "diff" else "R"
-        r = "Q" if ks[2] == "quat" else ("RM" if ks[2] == "rotmat" else "RV")
-        c = "C" if ks[3] == "cable" else "DC"
-        name = f"{d}_{r}_{c}"
-        names.append(name)
+
     medians = [np.median(x) for x in v]
     idx = np.argsort(medians)
     results = [(keys[i], medians[i]) for i in idx]
+
+    #valid = data[results[0][0]]["L3_loss"] < 0.07
+    #v = [x[valid] for x in v]
+    #medians = [np.median(x) for x in v]
+    #idx = np.argsort(medians)
+    #results = [(keys[i], medians[i]) for i in idx]
+
+
+    #a = data[results[0][0]]
+    #plt.subplot(121)
+    #plt.plot(a["ratio_loss"], '.')
+    #plt.subplot(122)
+    #plt.plot(a["L3_loss"], '.')
+    #plt.show()
+
+    v = [v[i] for i in idx]
+    keys = [keys[i] for i in idx]
     colors = []
     a = 0
-    positions = list(range(len(v)+1))
-    del positions[6]
+    positions = list(range(len(v)))
+    #del positions[6]
     #plt.figure(figsize=(10, 5))
-    plt.figure(figsize=(10, 4))
+    #plt.figure(figsize=(10, 4))
+    plt.figure(figsize=(12, 4))
     bp = plt.boxplot(v, positions=positions,
                     showmeans=True, showfliers=False,
                     # patch_artist=True, notch=True,
@@ -74,25 +85,26 @@ def boxplot(data, field, aug):
     # bp = ax.boxplot(collection[i], positions=[0, spacing])
     for i in range(len(bp["boxes"])):
         bs = "-"
+        cs = "-"
+        cc = False
         lw = 2.
         if "inbilstm" in keys[i]:
-            c = [1., 0., 0.]
-            bs = ":"
+            c = 'tab:blue'
+        elif "sep" in keys[i]:
+            c = 'tab:orange'
+        elif "transformer" in keys[i]:
+            c = 'tab:green'
+        elif "jactheir" in keys[i]:
+            c = 'tab:red'
         else:
-            #c = "b"
             c = [0., 0., 1.]
-            if "dcable" in keys[i]:
-                #c[0] += 0.5
-                #c[2] -= 0.6
-                #lw = 3.5
-                #bs = "--"
-                bs = ":"
-        #if "nodiff" in keys[i]:
-        #    lw = 3.
-        #else:
-        #    lw = 2.
-        if "nodiff" in keys[i]:
-            c[1] += 0.5
+
+        if "dcable" in keys[i]:
+            bs = ":"
+
+        if "_diff_" in keys[i]:
+            #cs = ":"
+            cc = "tab:purple"
 
         if "quat" in keys[i]:
             ws = "-"
@@ -110,28 +122,32 @@ def boxplot(data, field, aug):
         bp["whiskers"][2 * i + 1].set_color(c)
         bp["whiskers"][2 * i].set_linestyle(ws)
         bp["whiskers"][2 * i + 1].set_linestyle(ws)
-        bp["caps"][2 * i].set_color(c)
-        bp["caps"][2 * i + 1].set_color(c)
+        bp["caps"][2 * i].set_color(c if not cc else cc)
+        #bp["caps"][2 * i].set_linestyle(cs)
+        bp["caps"][2 * i + 1].set_color(c if not cc else cc)
+        #bp["caps"][2 * i + 1].set_linestyle(cs)
     ax = plt.gca()
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['bottom'].set_visible(False)
 
     custom_lines = [
-        Line2D([0], [0], color=[1., 0., 0.], lw=2, linestyle="-"),
-        Line2D([0], [0], color=[1., 0.5, 0.], lw=2, linestyle="-"),
-        Line2D([0], [0], color=[0., 0., 1.], lw=2, linestyle="-"),
-        Line2D([0], [0], color=[0., 0.5, 1.], lw=2, linestyle="-"),
+        Line2D([0], [0], color="tab:blue", lw=2, linestyle="-"),
+        Line2D([0], [0], color="tab:orange", lw=2, linestyle="-"),
+        Line2D([0], [0], color="tab:green", lw=2, linestyle="-"),
+        Line2D([0], [0], color="tab:red", lw=2, linestyle="-"),
+        Line2D([0], [0], color="tab:purple", lw=2, linestyle="-"),
         Line2D([0], [0], color="k", lw=2, linestyle="-"),
         Line2D([0], [0], color="k", lw=2, linestyle="--"),
         Line2D([0], [0], color="k", lw=2, linestyle="-."),
         Line2D([0], [0], color="k", lw=2, linestyle=":"),
     ]
     if aug == "noaug":
-        ax.legend(custom_lines, ["INBiLSTM Diff", 'INBiLSTM IE', 'FC Diff', 'FC IE',
+        ax.legend(custom_lines, ["INBiLSTM", 'MLP', 'Transformer', 'JacMLP', "diff",
                                  'quaternion', "rotation matrix", "axis angle", "DLO directions"],
-                  bbox_to_anchor=(0.9, 0.0), frameon=False, ncol=4)
+                  bbox_to_anchor=(0.9, 0.0), frameon=False, ncol=5)
     plt.subplots_adjust(bottom=0.2)
+    plt.ylim(0., 70.)
 
     ax.set_xticks([])
     #ax.set_xticks(positions)
@@ -168,8 +184,8 @@ def row_noaug(data, method, metric):
 
 #sd = sort(data, "mean_pts_loss_euc")
 sd = sort(data, "ratio_loss")
-boxplot(data, "ratio_loss", False)
-#boxplot(data, "ratio_loss", True)
+#boxplot(data, "ratio_loss", False)
+boxplot(data, "ratio_loss", True)
 print(sd)
 print(row_noaug(data, "sep", "ratio_loss"))
 #print(row_noaug(data, "sep", "pts_loss_euc"))

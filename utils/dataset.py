@@ -4,6 +4,7 @@ from tqdm import tqdm
 from scipy.spatial.transform import Rotation as R
 
 from utils.constants import BSplineConstants
+import matplotlib.pyplot as plt
 
 _tqdm = lambda t, s, i: tqdm(
     ncols=80,
@@ -207,7 +208,7 @@ def normalize_cable(cable):
     return cable
 
 
-def prepare_dataset_cond(path, rot, n=0, diff=False, augment=False, norm=False):
+def prepare_dataset_cond(path, rot, n=0, diff=False, augment=False, norm=False, scale=1.):
     assert rot in ["quat", "rotmat", "rotvec", "euler"]
     if path.endswith(".tsv"):
         data = np.loadtxt(path, delimiter='\t').astype(np.float32)
@@ -222,12 +223,20 @@ def prepare_dataset_cond(path, rot, n=0, diff=False, augment=False, norm=False):
     ncp = BSplineConstants.ncp
     R_l_0 = data[:, :9].reshape((-1, 3, 3))
     R_r_0 = data[:, 9:18].reshape((-1, 3, 3))
-    xyz_l_0 = data[:, 18:21]
-    cp_0 = data[:, 21:21 + ncp].reshape((-1, BSplineConstants.n, BSplineConstants.dim))
+    xyz_l_0 = data[:, 18:21] * scale
+    cp_0 = data[:, 21:21 + ncp].reshape((-1, BSplineConstants.n, BSplineConstants.dim)) * scale
+    #for i in range(cp_0.shape[0]):
+    #for i in range(100):
+    #    plt.subplot(211)
+    #    plt.plot(cp_0[i, ..., 1], cp_0[i, ..., 2])
+    #    plt.subplot(212)
+    #    plt.plot(cp_0[i, ..., 1], cp_0[i, ..., 0])
+    #plt.gca().set_aspect('equal')
+    #plt.show()
     R_l_1 = data[:, 21 + ncp:30 + ncp].reshape((-1, 3, 3))
     R_r_1 = data[:, 30 + ncp:39 + ncp].reshape((-1, 3, 3))
-    xyz_l_1 = data[:, 39 + ncp:42 + ncp]
-    cp_1 = data[:, 42 + ncp:42 + 2 * ncp].reshape((-1, BSplineConstants.n, BSplineConstants.dim))
+    xyz_l_1 = data[:, 39 + ncp:42 + ncp] * scale
+    cp_1 = data[:, 42 + ncp:42 + 2 * ncp].reshape((-1, BSplineConstants.n, BSplineConstants.dim)) * scale
     diff_R_l = np.transpose(R_l_0, (0, 2, 1)) @ R_l_1
     diff_R_r = np.transpose(R_r_0, (0, 2, 1)) @ R_r_1
     mul = 1.
@@ -345,8 +354,7 @@ def prepare_dataset_cond(path, rot, n=0, diff=False, augment=False, norm=False):
 
     ds_size = data.shape[0]
     ds = tf.data.Dataset.from_tensor_slices({"x1": X1, "x2": X2, "x3": X3, "y": Y})
-    return ds, ds_size, X1, X2, X3, Y#, data
-
+    return ds, ds_size, X1, X2, X3, Y  # , data
 
 
 def prepare_dataset_cond_lennorm(path, rot, n=0, diff=False, augment=False):
@@ -370,20 +378,43 @@ def prepare_dataset_cond_lennorm(path, rot, n=0, diff=False, augment=False):
 
     c0_len = np.sum(np.linalg.norm(cp_0[:, 1:] - cp_0[:, :-1], axis=-1), axis=-1)
     c1_len = np.sum(np.linalg.norm(cp_1[:, 1:] - cp_1[:, :-1], axis=-1), axis=-1)
-    #plt.subplot(131)
-    #plt.hist(c0_len, bins=25)
-    #plt.subplot(132)
-    #plt.hist(c1_len, bins=25)
-    #plt.subplot(133)
-    #plt.hist(c0_len - c1_len, bins=25)
-    #plt.show()
-    #c_len = (c0_len + c1_len) / 2.
+    # plt.subplot(131)
+    # plt.hist(c0_len, bins=25)
+    # plt.subplot(132)
+    # plt.hist(c1_len, bins=25)
+    # plt.subplot(133)
+    # plt.hist(c0_len - c1_len, bins=25)
+    # plt.show()
+    # c_len = (c0_len + c1_len) / 2.
+    step = 100
+    for k in range(0, cp_0.shape[0], step):
+        plt.subplot(221)
+        plt.plot(cp_0[k, :, 0], cp_0[k, :, 1], )
+        plt.subplot(223)
+        plt.plot(cp_0[k, :, 0], cp_0[k, :, 2], )
 
     # normalize translations by length
     xyz_l_0 = xyz_l_0 / c0_len[:, np.newaxis]
     xyz_l_1 = xyz_l_1 / c1_len[:, np.newaxis]
-    cp_0 = cp_0 / c0_len[:, np.newaxis, np.newaxis]
-    cp_1 = cp_1 / c0_len[:, np.newaxis, np.newaxis]
+    # cp_0 = cp_0 / c0_len[:, np.newaxis, np.newaxis]
+    # cp_1 = cp_1 / c1_len[:, np.newaxis, np.newaxis]
+    for k in range(0, cp_0.shape[0], step):
+        plt.subplot(222)
+        plt.plot(cp_0[k, :, 0], cp_0[k, :, 1], )
+        plt.subplot(224)
+        plt.plot(cp_0[k, :, 0], cp_0[k, :, 2], )
+        # plt.subplot(222)
+        # plt.plot(cp_1[k, :, 0], cp_1[k, :, 1],)
+        # plt.subplot(224)
+        # plt.plot(cp_1[k, :, 0], cp_1[k, :, 2],)
+    plt.show()
+
+    # R_l_0 = R.from_rotvec(R.from_matrix(R_l_0).as_rotvec() / c0_len[:, np.newaxis]).as_matrix()
+    # R_l_1 = R.from_rotvec(R.from_matrix(R_l_1).as_rotvec() / c1_len[:, np.newaxis]).as_matrix()
+    # R_r_0 = R.from_rotvec(R.from_matrix(R_r_0).as_rotvec() / c0_len[:, np.newaxis]).as_matrix()
+    # R_r_1 = R.from_rotvec(R.from_matrix(R_r_1).as_rotvec() / c1_len[:, np.newaxis]).as_matrix()
+    # diff_R_l = np.transpose(R_l_0, (0, 2, 1)) @ R_l_1
+    # diff_R_r = np.transpose(R_r_0, (0, 2, 1)) @ R_r_1
 
     if diff:
         if rot == "quat":
@@ -491,7 +522,8 @@ def prepare_dataset_cond_lennorm(path, rot, n=0, diff=False, augment=False):
 
     ds_size = data.shape[0]
     ds = tf.data.Dataset.from_tensor_slices({"x1": X1, "x2": X2, "x3": X3, "y": Y})
-    return ds, ds_size, X1, X2, X3, Y#, data
+    return ds, ds_size, X1, X2, X3, Y  # , data
+
 
 def prepare_dataset_cond_ref(path, n=0, quat=False, diff=False, augment=False):
     data = np.loadtxt(path, delimiter='\t').astype(np.float32)

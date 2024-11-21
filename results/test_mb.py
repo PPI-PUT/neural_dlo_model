@@ -7,8 +7,11 @@ from losses.cable import CableBSplineLoss
 from losses.cable_pts import CableBSplinePtsLoss, CablePtsLoss
 from models.cnn import CNN
 from models.inbilstm import INBiLSTM
+from models.jacobian_neural_predictor import JacobianNeuralPredictor
 from models.separated_cnn_neural_predictor import SeparatedCNNNeuralPredictor
 from models.separated_neural_predictor import SeparatedNeuralPredictor
+from models.linear_neural_predictor import LinearNeuralPredictor
+from models.transformer import Transformer
 from utils.bspline import BSpline
 from utils.constants import BSplineConstants
 from utils.geometry import calculateL3
@@ -26,41 +29,49 @@ from models.basic_neural_predictor import BasicNeuralPredictor
 
 np.random.seed(444)
 
-
 # physical_devices = tf.config.experimental.list_physical_devices('GPU')
 # assert len(physical_devices) > 0, "Not enough GPU hardware devices available"
 # config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-#mod = ["sep", "inbilstm"]
-mod = ["sep"]
-#mod = ["inbilstm"]
+#mod = ["sep", "inbilstm", "transformer", "jactheir"]
 qr = ["quat", "rotmat", "rotvec"]
 diff = ["nodiff", "diff"]
 aug = ["noaug", "augwithzeros"]
 cab = ["cable", "dcable"]
+mod = ["lin"]
+#mod = ["transformer"]
+#qr = ["rotmat"]
+#diff = ["nodiff"]
+#aug = ["augwithzeros"]
+#cab = ["dcable"]
 
 results = {}
 
-#for m, p, q, d in product(mod, pts, qr, diff):
+# for m, p, q, d in product(mod, pts, qr, diff):
 #    print(m, p, q, d)
 for m, q, c, d, a in product(mod, qr, cab, diff, aug):
     print(m, q, c, d, a)
 
+
     class args:
         batch_size = 128
         working_dir = '../trainings'
-        #dataset_path = f"../data/prepared_datasets/new_mb_03_27_poc64/train.tsv"
-        dataset_path = f"../data/prepared_datasets/new_mb_zoval_04_25/train.tsv"
+        # dataset_path = f"../data/prepared_datasets/new_mb_03_27_poc64/train.tsv"
+        #dataset_path = f"../data/prepared_datasets/new_mb_zoval_04_25/train.tsv"
+        dataset_path = f"../data/prepared_datasets/06_09_final_off3cm_50cm/train.tsv"
 
 
-    train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=q, diff=(d == "diff"), augment=(a == "augwithzeros"))
-    val_ds, val_size, vX1, vX2, vX3, vY = prepare_dataset_cond(args.dataset_path.replace("train", "val"), rot=q, diff=(d == "diff"))
-    test_ds, test_size, teX1, teX2, teX3, teY = prepare_dataset_cond(args.dataset_path.replace("train", "test"), rot=q, diff=(d == "diff"))
+    train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=q, diff=(d == "diff"),
+                                                                   augment=(a == "augwithzeros"))
+    val_ds, val_size, vX1, vX2, vX3, vY = prepare_dataset_cond(args.dataset_path.replace("train", "val"), rot=q,
+                                                               diff=(d == "diff"))
+    test_ds, test_size, teX1, teX2, teX3, teY = prepare_dataset_cond(args.dataset_path.replace("train", "test"), rot=q,
+                                                                     diff=(d == "diff"))
 
     ds_stats = compute_ds_stats(train_ds)
 
-    #ds, ds_size = train_ds, train_size
-    #ds, ds_size = val_ds, val_size
+    # ds, ds_size = train_ds, train_size
+    # ds, ds_size = val_ds, val_size
     ds, ds_size = test_ds, test_size
 
     loss = CablePtsLoss()
@@ -71,15 +82,23 @@ for m, q, c, d, a in product(mod, qr, cab, diff, aug):
         model = CNN()
     elif m == "inbilstm":
         model = INBiLSTM()
+    elif m == "transformer":
+        model = Transformer(num_layers=2, num_heads=8, dff=256, d_model=64, dropout_rate=0.1, target_size=3)
+    elif m == "lin":
+        model = LinearNeuralPredictor()
+    elif m == "jactheir":
+        model = JacobianNeuralPredictor(q, (d == "diff"))
     else:
         print("WRONG MODEL NAME")
         assert False
 
     ckpt = tf.train.Checkpoint(model=model)
-    #name = f"new_mb_03_27_poc64_lr5em4_bs128_{m}_{d}_{q}_{c}_{a}"
-    #dirname = "all_mb_03_27"
-    name = f"new_mb_zoval_04_25_poc64_lr5em4_bs128_{m}_{d}_{q}_{c}_{a}"
-    dirname = "all_mb_zoval_04_25"
+    # name = f"new_mb_03_27_poc64_lr5em4_bs128_{m}_{d}_{q}_{c}_{a}"
+    # dirname = "all_mb_03_27"
+    # name = f"new_mb_zoval_04_25_poc64_lr5em4_bs128_{m}_{d}_{q}_{c}_{a}"
+    # dirname = "all_mb_zoval_04_25"
+    name = f"06_09_final_off3cm_50cm_lr5em4_bs128_{m}_{d}_{q}_{c}_{a}"
+    dirname = "06_09_final_off3cm_50cm"
     path = f"../trained_models/{dirname}/{name}/checkpoints"
     print(path)
     best_list = list(glob(os.path.join(path, "best-*.index")))
@@ -87,8 +106,9 @@ for m, q, c, d, a in product(mod, qr, cab, diff, aug):
         continue
     best = best_list[0][:-6]
     ckpt.restore(best).expect_partial()
-    #ckpt.restore(best)
 
+
+    # ckpt.restore(best)
 
     def inference(rotation, translation, cable):
         rotation_, translation_, cable_ = whitening(rotation, translation, cable, ds_stats)
@@ -110,6 +130,7 @@ for m, q, c, d, a in product(mod, qr, cab, diff, aug):
     pts_losses_euc = []
     ratio_losses = []
     L3_losses = []
+    L3_baselosses = []
     for i, rotation, translation, cable, y_gt in _ds('Train', dataset_epoch, ds_size, 0, args.batch_size):
         y_pred = inference(rotation, translation, cable)
         pts_loss_abs, pts_loss_euc, pts_loss_l2 = loss(y_gt, y_pred)
@@ -127,6 +148,7 @@ for m, q, c, d, a in product(mod, qr, cab, diff, aug):
             print("RATIO:", ratio_loss)
             ratio_losses.append(ratio_loss)
             L3_losses.append(L3_gtpred)
+            L3_baselosses.append(L3_gtcable)
 
         pts_losses_abs.append(pts_loss_abs)
         pts_losses_euc.append(pts_loss_euc)
@@ -135,18 +157,21 @@ for m, q, c, d, a in product(mod, qr, cab, diff, aug):
     pts_loss_euc = tf.concat(pts_losses_euc, -1).numpy()
     ratio_losses = np.array(ratio_losses)
     L3_losses = np.array(L3_losses)
+    L3_baselosses = np.array(L3_baselosses)
 
-    #results[m + "_" + q + "_" + c + "_" + d + "_" + a] = {
+    # results[m + "_" + q + "_" + c + "_" + d + "_" + a] = {
     results = {
-        #"mean_ratio_loss": mean_ratio_losses, "std_ratio_loss": std_ratio_losses,
-        #"mean_pts_loss_abs": mean_pts_losses_abs, "std_pts_loss_abs": std_pts_losses_abs,
-        #"mean_pts_loss_euc": mean_pts_losses_euc, "std_pts_loss_euc": std_pts_losses_euc,
+        # "mean_ratio_loss": mean_ratio_losses, "std_ratio_loss": std_ratio_losses,
+        # "mean_pts_loss_abs": mean_pts_losses_abs, "std_pts_loss_abs": std_pts_losses_abs,
+        # "mean_pts_loss_euc": mean_pts_losses_euc, "std_pts_loss_euc": std_pts_losses_euc,
         "ratio_loss": ratio_losses,
         "L3_loss": L3_losses,
+        "L3_baseloss": L3_baselosses,
         "pts_loss_abs": pts_losses_abs,
         "pts_loss_euc": pts_losses_euc,
     }
 
+    os.makedirs(dirname, exist_ok=True)
     np.save(f"{dirname}/{name}.npy", results)
 
-#np.save("results_all_new_mb.npy", results)
+# np.save("results_all_new_mb.npy", results)

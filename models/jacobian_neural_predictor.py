@@ -87,17 +87,19 @@ class JacobianRBFN(tf.keras.Model):
         N = 256
         p = 0.2
 
-        kmeans = KMeans(n_clusters=N, n_init=2, max_iter=100).fit(features)
+        #kmeans = KMeans(n_clusters=N, n_init=2, max_iter=100).fit(features)
 
-        nSamples = np.zeros((N,), dtype='float32')
-        variance = np.zeros((N,), dtype='float32')
-        for i, label in enumerate(kmeans.labels_):
-            variance[label] += np.linalg.norm(features[i, :] - kmeans.cluster_centers_[label, :]) ** 2
-            nSamples[label] += 1
-        variance = variance / (nSamples - 1)
+        #nSamples = np.zeros((N,), dtype='float32')
+        #variance = np.zeros((N,), dtype='float32')
+        #for i, label in enumerate(kmeans.labels_):
+        #    variance[label] += np.linalg.norm(features[i, :] - kmeans.cluster_centers_[label, :]) ** 2
+        #    nSamples[label] += 1
+        #variance = variance / (nSamples - 1)
 
-        self.mu = tf.Variable(kmeans.cluster_centers_[np.newaxis], trainable=True)
-        self.var = tf.Variable(variance[np.newaxis], trainable=True)
+        #self.mu = tf.Variable(kmeans.cluster_centers_[np.newaxis], trainable=True)
+        #self.var = tf.Variable(variance[np.newaxis], trainable=True)
+        self.mu = tf.Variable(np.random.random((1, N, 203)).astype(np.float32), trainable=True)
+        self.var = tf.Variable(np.random.random((1, N)).astype(np.float32), trainable=True)
 
         trans_dim = 3
         rot_dim = 0

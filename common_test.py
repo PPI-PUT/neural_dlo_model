@@ -6,6 +6,7 @@ from losses.cable_all2all import CableBSplineAll2AllLoss, CableAll2AllLoss
 from losses.cable_pts import CablePtsLoss
 from models.cnn import CNN
 from models.inbilstm import INBiLSTM
+from models.jacobian_neural_predictor import JacobianNeuralPredictor
 from models.separated_cnn_neural_predictor import SeparatedCNNNeuralPredictor
 from models.separated_neural_predictor import SeparatedNeuralPredictor
 from models.transformer import Transformer
@@ -21,7 +22,7 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 
 from utils.dataset import _ds, prepare_dataset, whiten, mix_datasets, whitening, compute_ds_stats, unpack_translation, \
-    unpack_rotation, prepare_dataset_cond, unpack_cable
+    unpack_rotation, prepare_dataset_cond, unpack_cable, prepare_dataset_cond_lennorm, normalize_cable
 from utils.execution import ExperimentHandler
 from models.basic_neural_predictor import BasicNeuralPredictor
 
@@ -33,13 +34,14 @@ tf.random.set_seed(444)
 # assert len(physical_devices) > 0, "Not enough GPU hardware devices available"
 # config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-plot = False
-#plot = True
+#plot = False
+plot = True
 
 class args:
-    batch_size = 128
-    #batch_size = 1
-    # batch_size = 32
+    #batch_size = 128
+    batch_size = 1
+    #batch_size = 8
+    #batch_size = 64
     working_dir = './trainings'
     # dataset_path = "./data/prepared_datasets/xyzrpy_episodic_all2all_02_10__14_00_p16/train.tsv"
     # dataset_path = "./data/prepared_datasets/xyzrpy_episodic_semisep_all2all_02_10__14_00_p16/train.tsv"
@@ -52,24 +54,37 @@ class args:
     #dataset_path = "./data/prepared_datasets/new_mb_03_27_poc64/train.tsv"
     #dataset_path = "./data/prepared_datasets/new_mb_45cm_04_03/train.tsv"
     #dataset_path = "./data/prepared_datasets/new_mb_zoval_04_25/train.tsv"
-    dataset_path = "./data/prepared_datasets/06_09_final_off3cm_50cm/train.tsv"
+    #dataset_path = "./data/prepared_datasets/06_09_final_off3cm_50cm/train.tsv"
+    #dataset_path = "./data/prepared_datasets/06_09_final_off3cm_p2/train.tsv"
+    #dataset_path = "./data/prepared_datasets/06_09_final_off3cm_p3/train.tsv"
+    #dataset_path = "./data/prepared_datasets/06_09_final_off3cm_50cm/train.tsv"
+    base_dataset_path = "./data/prepared_datasets/06_09_final_off3cm_50cm/train.tsv"
+    #dataset_path = "./data/prepared_datasets/06_09_final_off3cm_40cm/train.tsv"
+    #dataset_path = "./data/prepared_datasets/06_09_final_off3cm_50cm/train.tsv"
+    dataset_path = "./data/prepared_datasets/04_17_final_off3cm_55cm/train.tsv"
 
 
 #rot = "quat"
-#rot = "rotvec"
-rot = "rotmat"
-#diff = True
-diff = False
+rot = "rotvec"
+#rot = "rotmat"
+diff = True
+#diff = False
 #ifdcable = False
 ifdcable = True
-train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot, diff=diff, augment=True)
+#norm = True
+norm = False
+#train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot, diff=diff, augment=True, norm=norm)
+train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.base_dataset_path, rot, diff=diff, augment=True, norm=norm)
 #train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset(args.dataset_path, augment=True)  # , n=10)
 #train_ds_, train_size_, tX1_, tX2_, tX3_, tY_ = prepare_dataset(args.dataset_path)  # , n=10)
 #val_ds, val_size, vX1, vX2, vX3, vY = prepare_dataset(args.dataset_path.replace("train", "val"))
-val_ds, val_size, vX1, vX2, vX3, vY = prepare_dataset_cond(args.dataset_path.replace("train", "val"), rot, diff=diff, augment=False)
-test_ds, test_size, teX1, teX2, teX3, teY = prepare_dataset_cond(args.dataset_path.replace("train", "test"), rot, diff=diff, augment=False)
+val_ds, val_size, vX1, vX2, vX3, vY = prepare_dataset_cond(args.dataset_path.replace("train", "val"), rot, diff=diff, augment=False, norm=norm)
+#test_ds, test_size, teX1, teX2, teX3, teY = prepare_dataset_cond(args.dataset_path.replace("train", "test_filtered"), rot, diff=diff, augment=False)
+#test_ds, test_size, teX1, teX2, teX3, teY = prepare_dataset_cond(args.dataset_path.replace("train", "test"), rot, diff=diff, augment=False, norm=norm, scale=50./40.)
+test_ds, test_size, teX1, teX2, teX3, teY = prepare_dataset_cond(args.dataset_path.replace("train", "test"), rot, diff=diff, augment=False, norm=norm, scale=50./55.)
+test_data = np.loadtxt(args.dataset_path.replace("train", "test"), delimiter='\t').astype(np.float32)
 
-ds_stats = compute_ds_stats(train_ds)
+ds_stats = compute_ds_stats(train_ds, norm=norm)
 #ds_stats_ = compute_ds_stats(train_ds_)
 
 #ds, ds_size = train_ds, train_size
@@ -83,11 +98,12 @@ loss_all2all = CableAll2AllLoss()
 loss = CablePtsLoss()
 
 #model = BasicNeuralPredictor()
-# model = SeparatedCNNNeuralPredictor()
-model = SeparatedNeuralPredictor()
+#model = SeparatedCNNNeuralPredictor()
+#model = SeparatedNeuralPredictor()
 #model = INBiLSTM()
 # model = CNN()
-#model = Transformer(num_layers=2, num_heads=8, dff=256, d_model=64, dropout_rate=0.1, target_size=3)
+model = Transformer(num_layers=2, num_heads=8, dff=256, d_model=64, dropout_rate=0.1, target_size=3)
+#model = JacobianNeuralPredictor(rot, diff)
 
 
 ckpt = tf.train.Checkpoint(model=model)
@@ -98,7 +114,7 @@ ckpt = tf.train.Checkpoint(model=model)
 #ckpt.restore("./trained_models//new_mb_zoval_04_25_poc64_lr5em4_bs128_sep_diff_rotvec_cable_augwithzeros/checkpoints/best-154")
 
 # sep
-ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_sep_nodiff_rotmat_dcable_augwithzeros/checkpoints/best-41")
+#ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_sep_nodiff_rotmat_dcable_augwithzeros/checkpoints/best-41")
 #ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_sep_nodiff_rotmat_dcable_noaug/checkpoints/best-20")
 #ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_sep_diff_rotmat_dcable_noaug/checkpoints/best-45")
 #ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_sep_diff_rotmat_dcable_augwithzeros/checkpoints/best-58")
@@ -107,11 +123,34 @@ ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_l
 #ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_inbilstm_nodiff_rotmat_dcable_noaug/checkpoints/best-30")
 #ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_inbilstm_diff_rotmat_dcable_noaug/checkpoints/best-32")
 #ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_inbilstm_diff_rotmat_dcable_augwithzeros/checkpoints/best-31")
-# transformwer
+#ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_inbilstm_nodiff_rotvec_dcable_noaug_/checkpoints/best-42")
+# transformer
 #ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_transformer_nodiff_rotmat_dcable_noaug/checkpoints/best-30")
 #ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_transformer_nodiff_rotmat_dcable_augwithzeros/checkpoints/best-24") # diff - to be retrained on nodiff
 #ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_transformer_diff_rotmat_dcable_augwithzeros/checkpoints/best-38")
 #ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_transformer_diff_rotmat_dcable_noaug/checkpoints/best-51")
+
+# jacobian
+#ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_jac_nodiff_rotmat_dcable_augwithzeros/checkpoints/best-16")
+#ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_jac_nodiff_rotmat_dcable_noaug/checkpoints/best-13")
+#ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_lr5em4_bs128_jac_diff_rotmat_dcable_augwithzeros/checkpoints/best-30")
+
+# p2
+#ckpt.restore("./trained_models/06_09_final_off3cm_p2/best-1059")
+# p3
+#ckpt.restore("./trained_models/06_09_final_off3cm_p3/best-163")
+
+# len
+#ckpt.restore("./trained_models/06_09_final_off3cm_lengths/06_09_final_off3cm_50cm_lr5em4_bs128_sep_nodiff_rotmat_cable_augwithzeros_lennormfix/checkpoints/best-35")
+#ckpt.restore("./trained_models/06_09_final_off3cm_lengths/06_09_final_off3cm_50cm_lr5em4_bs128_sep_nodiff_rotmat_cable_augwithzeros_lennormtransfixed2/checkpoints/best-79")
+#ckpt.restore("./trained_models/06_09_final_off3cm_lengths/06_09_final_off3cm_50cm_lr5em4_bs128_sep_nodiff_rotmat_cable_augwithzeros/checkpoints/best-83")
+#ckpt.restore("./trained_models/06_09_final_off3cm_lengths/06_09_final_off3cm_50cm_lr5em4_bs128_transformer_diff_rotvec_dcable_augwithzeros/checkpoints/best-59")
+
+# nowhithening
+#ckpt.restore("./trained_models/06_09_final_off3cm_50cm_nowhithening/best-125")
+#ckpt.restore("./trained_models/06_09_final_off3cm_lengths/06_09_final_off3cm_50cm_lr5em4_bs128_sep_nodiff_rotmat_cable_augwithzeros/checkpoints/best-83")
+ckpt.restore("./trained_models/06_09_final_off3cm_lengths/06_09_final_off3cm_50cm_lr5em4_bs128_transformer_diff_rotvec_dcable_augwithzeros/checkpoints/best-59")
+#ckpt.restore("./trained_models/06_09_final_off3cm_50cm_nowhithening/06_09_final_off3cm_50cm_lr5em4_bs128_transformer_diff_rotvec_dcable_augwithzeros_nowhithening/checkpoints/best-27")
 
 
 #ckpt.restore("./trained_models/all/xyzrpy_episodic_sep_all2all_02_23__01_00_cp16_bs128_lr5em4_sep_absloss_withened_quat_augwithzeros/checkpoints/last_n-70")
@@ -133,7 +172,11 @@ ckpt.restore("./trained_models/06_09_final_off3cm_50cm/06_09_final_off3cm_50cm_l
 #    return y_pred
 
 def inference(rotation, translation, cable):
-    rotation_, translation_, cable_ = whitening(rotation, translation, cable, ds_stats)
+    cable_ = cable
+    if norm:
+        cable_ = normalize_cable(cable)
+    rotation_, translation_, cable_ = whitening(rotation, translation, cable_, ds_stats)
+    #rotation_, translation_, cable_ = rotation, translation, cable_
     R_l_0, R_l_1, R_r_0, R_r_1 = unpack_rotation(rotation_)
     t_l_0, t_l_1 = unpack_translation(translation_)
     cable_, dcable_ = unpack_cable(cable_)
@@ -163,8 +206,18 @@ l12_losses = []
 l12ref = []
 L3_gtpreds = []
 L3_gtcables = []
+test_data_filtered = []
+data = []
 for i, rotation, translation, cable, y_gt in _ds('Train', dataset_epoch, ds_size, 0, args.batch_size):
+    #c0_len = np.sum(np.linalg.norm(cable[:, 1:, :3] - cable[:, :-1, :3], axis=-1), axis=-1)
+    #c1_len = np.sum(np.linalg.norm(y_gt[:, 1:] - y_gt[:, :-1], axis=-1), axis=-1)
+
+    #translation = translation / c0_len[:, np.newaxis]
+
+    t0 = perf_counter()
     y_pred = inference(rotation, translation, cable)
+    t1 = perf_counter()
+    print(t1 - t0)
     pts_loss_abs, pts_loss_euc, pts_loss_l2 = loss(y_gt, y_pred)
 
     cable, dcable_ = unpack_cable(cable)
@@ -173,13 +226,13 @@ for i, rotation, translation, cable, y_gt in _ds('Train', dataset_epoch, ds_size
     # ratio_loss = tf.reduce_mean(ratio, axis=-1)
     #ratio_loss = np.mean(np.linalg.norm(y_gt - y_pred, axis=-1), axis=-1) / (
     #            np.mean(np.linalg.norm(y_gt - cable, axis=-1), axis=-1) + 1e-8)
-    for i in range(y_pred.shape[0]):
+    for k in range(y_pred.shape[0]):
         #frechet_dist_gtpred = frdist(y_gt[i], y_pred[i])
         #frechet_dist_gtcable = frdist(y_gt[i], cable[i])
         #dtw_gtpred = dtw(y_gt[i], y_pred[i])
         #dtw_gtcable = dtw(y_gt[i], cable[i])
-        L3_gtpred = calculateL3(y_gt[i].numpy().T, y_pred[i].numpy().T)
-        L3_gtcable = calculateL3(y_gt[i].numpy().T, cable[i].numpy().T)
+        L3_gtpred = calculateL3(y_gt[k].numpy().T, y_pred[k].numpy().T)
+        L3_gtcable = calculateL3(y_gt[k].numpy().T, cable[k].numpy().T)
         #if L3_gtcable < 0.02:
         #    continue
         L3_gtpreds.append(L3_gtpred)
@@ -190,6 +243,10 @@ for i, rotation, translation, cable, y_gt in _ds('Train', dataset_epoch, ds_size
         print("L3 DIFF:", L3_gtcable)
         print("RATIO:", ratio_loss)
         ratio_losses.append(ratio_loss)
+        if ratio_loss < 0.3:
+            test_data_filtered.append(test_data[i * args.batch_size + k])
+        data.append((cable[k], y_gt[k], y_pred[k], ratio_loss))
+
 
     _, _, l12_gtpred = loss_all2all(y_gt, y_pred)
     _, _, l12_gtcable = loss_all2all(y_gt, cable)
@@ -232,23 +289,25 @@ for i, rotation, translation, cable, y_gt in _ds('Train', dataset_epoch, ds_size
         v_gt = (bsp.N[0] @ cp_gt)
         v_base = (bsp.N[0] @ cp0)
         plt.subplot(222)
-        plt.xlim(xl, xh)
-        plt.ylim(yl, yh)
+        #plt.xlim(xl, xh)
+        #plt.ylim(yl, yh)
         plt.plot(v_pred[:, 1], v_pred[:, 2], label="pred")
         plt.plot(v_gt[:, 1], v_gt[:, 2], label="gt")
         plt.plot(v_base[:, 1], v_base[:, 2], label="base")
-        plt.legend()
+        plt.axis('scaled')
+        #plt.legend()
         plt.subplot(224)
-        plt.xlim(zl, zh)
-        plt.ylim(xl, xh)
-        plt.plot(v_pred[:, 0], v_pred[:, 1], label="pred")
-        plt.plot(v_gt[:, 0], v_gt[:, 1], label="gt")
-        plt.plot(v_base[:, 0], v_base[:, 1], label="base")
+        #plt.xlim(zl, zh)
+        #plt.ylim(xl, xh)
+        plt.plot(v_pred[:, 1], v_pred[:, 0], label="pred")
+        plt.plot(v_gt[:, 1], v_gt[:, 0], label="gt")
+        plt.plot(v_base[:, 1], v_base[:, 0], label="base")
+        plt.axis('scaled')
         # plt.xlim(-0.1, 0.7)
         # plt.ylim(-0.4, 0.4)
         plt.legend()
         #plt.show()
-        plt.savefig(f"pred_imgs/{ratio_loss:.5f}.png")
+        plt.savefig(f"pred_imgs_55/{ratio_loss:.5f}.pdf")
         a = 0
 
     epoch_loss.append(model_loss)
@@ -263,6 +322,10 @@ L3_gtpreds = np.array(L3_gtpreds)
 L3_gtcables = np.array(L3_gtcables)
 l12_losses = np.concatenate(l12_losses, -1)
 l12ref = np.concatenate(l12ref, -1)
+
+
+test_data_filtered = np.stack(test_data_filtered, axis=0)
+np.savetxt(args.dataset_path.replace("train", "test_filtered"), test_data_filtered.astype(np.float32), delimiter='\t')
 
 # plt.subplot(121)
 # plt.hist(gt_energies, bins=50, color='r')

@@ -9,6 +9,8 @@ from models.cnn import CNN
 from models.inbilstm import INBiLSTM
 from models.separated_cnn_neural_predictor import SeparatedCNNNeuralPredictor
 from models.separated_neural_predictor import SeparatedNeuralPredictor
+from models.jacobian_neural_predictor import JacobianNeuralPredictor, JacobianRBFN
+from models.transformer import Transformer
 from utils.bspline import BSpline
 from utils.constants import BSplineConstants
 from utils.geometry import calculateL3
@@ -31,29 +33,55 @@ np.random.seed(444)
 # assert len(physical_devices) > 0, "Not enough GPU hardware devices available"
 # config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-#mod = ["sep", "inbilstm"]
 results = {}
 
-m = "sep"
-#m = "inbilstm"
-q = "rotmat"
-d = "nodiff"
-c = "dcable"
+cable_type = "p2"
+#cable_type = "p3"
 
 class args:
     batch_size = 128
     working_dir = '../trainings'
-    dataset_path = f"../data/prepared_datasets/new_mb_40cm_04_03/train.tsv"
+    dataset_path = f"../data/prepared_datasets/06_09_final_off3cm_{cable_type}/train.tsv"
+    dataset50_path = f"../data/prepared_datasets/06_09_final_off3cm_50cm/train.tsv"
 
 
 #for path in glob(f"../trained_models/lengths2_mb_03_04/new_mb_*100percent40cm_04_03_poc64_lr5em4_bs128_sep_nodiff_rotmat_dcable_augwithzeros"):
-for path in glob(f"../trained_models/lengths2_mb_03_04/new_mb_03_27_for40cm_poc64_lr5em4_bs128_sep_nodiff_rotmat_dcable_augwithzeros*"):
+#for path in glob(f"../trained_models/06_09_final_off3cm_{cable_type}/*"):
+for path in glob(f"../trained_models/06_09_final_off3cm_{cable_type}/06_09_final_off3cm_50cm_*"):
+    if "jactheir" not in path:
+        continue # run this only for jactheir
+    print(path)
     name = path.split("/")[-1]
+    fields = name.split("_")
 
-    augument = "augwithzeros" in path
-    train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=q, diff=(d == "diff"), augment=augument)
-    val_ds, val_size, vX1, vX2, vX3, vY = prepare_dataset_cond(args.dataset_path.replace("train", "val"), rot=q, diff=(d == "diff"))
-    test_ds, test_size, teX1, teX2, teX3, teY = prepare_dataset_cond(args.dataset_path.replace("train", "test"), rot=q, diff=(d == "diff"))
+    q = fields[-3]
+    d = fields[-4] == "diff"
+    m = fields[-5]
+    c = fields[-2]
+
+    ds_type = fields[4]
+    ds_share = fields[5]
+    if ds_type == "50cm":
+        train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset50_path, rot=q, diff=d, augment=True)
+    elif ds_type == cable_type:
+        train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=q, diff=d)
+        ds_size_mul = 1.
+        if ds_share == "01percent":
+            ds_size_mul = 0.001
+        elif ds_share == "1percent":
+            ds_size_mul = 0.01
+        elif ds_share == "10percent":
+            ds_size_mul = 0.1
+        if "percent" in ds_share:
+            train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=q, diff=d,
+                                                                           augment=True, n=int(train_size * ds_size_mul))
+        else:
+            train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=q, diff=d, augment=True)
+
+    #continue
+    #train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=q, diff=d, augment=True)
+    #val_ds, val_size, vX1, vX2, vX3, vY = prepare_dataset_cond(args.dataset_path.replace("train", "val"), rot=q, diff=d)
+    test_ds, test_size, teX1, teX2, teX3, teY = prepare_dataset_cond(args.dataset_path.replace("train", "test"), rot=q, diff=d)
 
     ds_stats = compute_ds_stats(train_ds)
 
@@ -65,10 +93,12 @@ for path in glob(f"../trained_models/lengths2_mb_03_04/new_mb_03_27_for40cm_poc6
 
     if m == "sep":
         model = SeparatedNeuralPredictor()
-    elif m == "cnn":
-        model = CNN()
+    elif m == "transformer":
+        model = Transformer(num_layers=2, num_heads=8, dff=256, d_model=64, dropout_rate=0.1, target_size=3)
     elif m == "inbilstm":
         model = INBiLSTM()
+    elif m == "jactheir":
+        model = JacobianNeuralPredictor(q, d)
     else:
         print("WRONG MODEL NAME")
         assert False
@@ -136,7 +166,9 @@ for path in glob(f"../trained_models/lengths2_mb_03_04/new_mb_03_27_for40cm_poc6
         "pts_loss_euc": pts_losses_euc,
     }
 
-    os.makedirs("lengths2_mb_04_03", exist_ok=True)
-    np.save(f"lengths2_mb_04_03/{name}.npy", results)
+    dirname = f"06_09_final_off3cm_{cable_type}"
+    #dirname = f"06_09_final_off3cm_{cable_type}_wrongwhithening"
+    os.makedirs(dirname, exist_ok=True)
+    np.save(f"{dirname}/{name}.npy", results)
 
 #np.save("results_all_new_mb.npy", results)

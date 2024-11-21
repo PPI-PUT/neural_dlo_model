@@ -36,6 +36,7 @@ np.random.seed(444)
 
 class args:
     batch_size = 128
+    #batch_size = 1
     # batch_size = 64
     # batch_size = 32
     working_dir = './trainings'
@@ -71,22 +72,23 @@ class args:
     #dataset_path = "./data/prepared_datasets/new_1/train.tsv"
     #dataset_path = "./data/prepared_datasets/new_mb_03_27_poc64/train.tsv"
     dataset_path = "./data/prepared_datasets/06_09_final_off3cm_50cm/train.tsv"
+    #dataset_path = "./data/prepared_datasets/dataset_neural_network_points_8_0.03_0.0_0.0/train.npy"
 
 
 diff = True
-#rot = "quat"
+rot = "quat"
 #rot = "rotmat"
-rot = "rotvec"
+#rot = "rotvec"
 #ifdcable = True
 ifdcable = False
 #norm = False
 norm = True
 
-train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=rot, diff=diff, norm=norm)  # , n=10)
+train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=rot, diff=diff, norm=norm, augment=False, n=256)
+#train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=rot, diff=diff, norm=norm, augment=True, n=10)  # , n=10)
 ##train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=rot, diff=diff, augment=True, norm=norm)  # , n=10)
-val_ds, val_size, vX1, vX2, vX3, vY = prepare_dataset_cond(args.dataset_path.replace("train", "val"), rot=rot, diff=diff, norm=norm)
+val_ds, val_size, vX1, vX2, vX3, vY = prepare_dataset_cond(args.dataset_path.replace("train", "val"), rot=rot, diff=diff, norm=norm, n=256)
 #train_ds, train_size, tX1, tX2, tX3, tY = prepare_dataset_cond(args.dataset_path, rot=rot, diff=diff, augment=True)  # , n=10)
-val_ds, val_size, vX1, vX2, vX3, vY = prepare_dataset_cond(args.dataset_path.replace("train", "val"), rot=rot, diff=diff)
 
 ds_stats = compute_ds_stats(train_ds, norm=norm)
 
@@ -103,8 +105,8 @@ loss = CablePtsLoss()
 #model = INBiLSTM()
 # model = CNN()
 # model = CNNSep()
-#model = Transformer(num_layers=2, num_heads=8, dff=256, d_model=64, dropout_rate=0.1, target_size=3)
-model = TransformerNew(num_layers=2, num_heads=8, dff=256, d_model=64, target_size=3)
+model = Transformer(num_layers=2, num_heads=8, dff=256, d_model=64, dropout_rate=0.0, target_size=3)
+#model = TransformerNew(num_layers=2, num_heads=8, dff=256, d_model=64, target_size=3)
 #model = JacobianNeuralPredictor(rot, diff)
 
 
@@ -158,6 +160,11 @@ for epoch in range(30000):
     experiment_handler.log_training()
     times = []
     for i, rotation, translation, cable, y_gt in _ds('Train', dataset_epoch, train_size, epoch, args.batch_size):
+        t0 = perf_counter()
+        y_pred = inference(rotation, translation, cable)
+        t1 = perf_counter()
+        times.append(t1 - t0)
+        print(t1 - t0)
         with tf.GradientTape(persistent=True) as tape:
             #t0 = perf_counter()
             y_pred = inference(rotation, translation, cable)
@@ -187,8 +194,8 @@ for epoch in range(30000):
             tf.summary.scalar('metrics/pts_loss_l2', tf.reduce_mean(pts_loss_l2), step=train_step)
             tf.summary.scalar('metrics/reg_loss', tf.reduce_mean(reg_loss), step=train_step)
         train_step += 1
-    #print(times)
-    #print(np.mean(times))
+    print(times)
+    print(np.mean(times))
     #assert False
 
     epoch_loss = tf.reduce_mean(tf.concat(epoch_loss, -1))

@@ -1,7 +1,4 @@
 import tensorflow as tf
-from tensorflow.python.keras.layers import LSTM
-
-from utils.constants import BSplineConstants
 
 
 class INBiLSTM(tf.keras.Model):
@@ -35,8 +32,8 @@ class INBiLSTM(tf.keras.Model):
         self.bilstm = tf.keras.Sequential([
             # Bidirectional(LSTM(N, return_sequences=True), merge_mode="sum"),
             # Bidirectional(LSTM(N, return_sequences=True), merge_mode="sum"),
-            tf.keras.layers.Bidirectional(LSTM(int(N / 2), return_sequences=True)),
-            tf.keras.layers.Bidirectional(LSTM(int(N / 2), return_sequences=True)),
+            tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(int(N / 2), return_sequences=True)),
+            tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(int(N / 2), return_sequences=True)),
         ])
 
         self.action_left = [
